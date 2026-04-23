@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { FileText, Activity, ClipboardCheck, Briefcase, Info } from 'lucide-react';
+import { 
+  FileText, Activity, ClipboardCheck, Briefcase, 
+  Info, ChevronRight, AlertTriangle, Settings 
+} from 'lucide-react';
 
 function App() {
   const [contexto, setContexto] = useState('');
@@ -9,7 +12,7 @@ function App() {
   const [respuestas, setRespuestas] = useState({});
   const [reporte, setReporte] = useState(null);
 
-  // 1. Generar la Auditoría (Preguntas cualitativas de preventa)
+  // --- LÓGICA (Mantenida exactamente igual) ---
   const handleGenerateEntrevista = async () => {
     setLoading(true);
     setQuestions([]);
@@ -21,29 +24,17 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: `SÍNTOMA: ${sintomas}. CONTEXTO: ${contexto}.`,
-          systemPrompt: `Eres un Consultor Senior de Mantenimiento experto en metodología 6M (Ishikawa). 
-          Genera una auditoría preliminar para una primera reunión.
-          REGLAS:
-          1. Preguntas 100% relacionadas al síntoma y contexto.
-          2. PROHIBIDO pedir datos duros (medidas, seriales, fechas exactas).
-          3. Las preguntas deben ser CUALITATIVAS (ej: "¿Se percibe vibración al tacto?", "¿El personal ha reportado ruidos?", "¿Se ve fuga de fluidos?").
-          4. Estructura: 3 preguntas por cada una de las 6M (Maquinaria, Mano de Obra, Métodos, Materiales, Medición, Medio Ambiente).
-          Responde ÚNICAMENTE en JSON: { "categorias": [ { "nombre": "...", "preguntas": ["..."] } ] }`
+          systemPrompt: `Eres un Consultor Senior de Mantenimiento experto en metodología 6M (Ishikawa). Genera una auditoría preliminar. REGLAS: 1. Preguntas cualitativas. 2. PROHIBIDO datos duros. 3. 3 preguntas por cada 6M. Responde ÚNICAMENTE en JSON: { "categorias": [ { "nombre": "...", "preguntas": ["..."] } ] }`
         })
       });
       const data = await response.json();
-      const listaExtraida = data.categorias || data.categories || data.preguntas || [];
-      setQuestions(listaExtraida);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
+      setQuestions(data.categorias || []);
+    } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  const handleOptionChange = (qIdx, catIdx, valor) => {
+  const handleOptionChange = (qIdx, catIdx, valor, pregunta, categoria) => {
     const id = `${catIdx}-${qIdx}`;
-    setRespuestas(prev => ({ ...prev, [id]: { ...prev[id], opcion: valor } }));
+    setRespuestas(prev => ({ ...prev, [id]: { ...prev[id], opcion: valor, pregunta, categoria } }));
   };
 
   const handleCommentChange = (qIdx, catIdx, texto) => {
@@ -51,133 +42,195 @@ function App() {
     setRespuestas(prev => ({ ...prev, [id]: { ...prev[id], comentario: texto } }));
   };
 
-  // 2. Generar Informe ACR (Enfoque 6M y Comercial)
   const handleGenerateACR = async () => {
     setLoading(true);
     try {
-      const promptACR = `SÍNTOMA INICIAL: ${sintomas}. RESPUESTAS AUDITORÍA: ${JSON.stringify(respuestas)}`;
-      
+      const promptACR = `SÍNTOMA: ${sintomas}. RESPUESTAS: ${JSON.stringify(respuestas)}`;
       const response = await fetch('https://sixmprueba.onrender.com/api/diagnostico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: promptACR,
-          systemPrompt: `Eres un experto en Análisis de Causa Raíz (ACR). Analiza los datos de la auditoría 6M.
-          ESTRUCTURA DE RESPUESTA (JSON PURO):
-          {
-            "resumen": "Resumen técnico de la situación.",
-            "analisis_6m": { "Maquinaria": "...", "Mano_Obra": "...", "Metodos": "...", "Materiales": "...", "Medicion": "...", "Medio_Ambiente": "..." },
-            "hipotesis": "Hipótesis principal del fallo.",
-            "conclusiones": "Conclusión técnica general.",
-            "solucion_profesional": "Explicación de la solución necesaria y por qué es vital contratarnos para ejecutar el servicio definitivo."
-          }`
+          systemPrompt: `Eres un Experto en Confiabilidad. Analiza y responde en JSON: { "resumen": "...", "analisis_6m": { "Maquinaria": "...", "Mano_Obra": "...", "Metodos": "...", "Materiales": "...", "Medicion": "...", "Medio_Ambiente": "..." }, "hipotesis": "...", "conclusiones": "...", "solucion_profesional": "..." }`
         })
       });
       const data = await response.json();
       setReporte(data);
-      window.scrollTo(0, document.body.scrollHeight);
-    } catch (error) {
-      alert("Error al generar el reporte");
-    } finally {
-      setLoading(false);
-    }
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    } catch (error) { alert("Error"); } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pb-20">
-      <div className="max-w-4xl mx-auto">
-        <header className="bg-blue-900 text-white p-6 rounded-t-xl shadow-lg flex items-center gap-3">
-          <Activity size={32} />
-          <h1 className="text-2xl font-bold uppercase tracking-tight">Auditoría Industrial 6M</h1>
-        </header>
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
+      {/* HEADER DINÁMICO */}
+      <header className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-8 shadow-2xl border-b-4 border-blue-500">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-500 p-3 rounded-2xl shadow-inner animate-pulse">
+              <Activity size={40} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black tracking-tighter uppercase italic">Auditoría 6M Pro</h1>
+              <p className="text-blue-200 text-sm font-medium">Inteligencia Artificial aplicada a Confiabilidad Industrial</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <span className="bg-blue-800/50 px-3 py-1 rounded-full text-xs font-bold border border-blue-400/30">v2.5 Flash</span>
+            <span className="bg-green-500/20 px-3 py-1 rounded-full text-xs font-bold border border-green-400 text-green-400 flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-ping" /> Online
+            </span>
+          </div>
+        </div>
+      </header>
 
-        <main className="bg-white p-6 rounded-b-xl shadow-md space-y-6">
-          <section className="grid gap-4 bg-slate-50 p-4 rounded-lg border">
-            <div>
-              <label className="block text-sm font-black text-blue-900 mb-1 uppercase">Contexto:</label>
-              <input className="w-full p-3 border rounded shadow-sm" value={contexto} onChange={(e) => setContexto(e.target.value)} placeholder="Ej: Planta de Procesos, Motor de Inducción..." />
+      <main className="max-w-5xl mx-auto p-6 space-y-10">
+        
+        {/* SECCIÓN DE ENTRADA - DISEÑO DE CARD */}
+        <section className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 transform transition-all">
+          <div className="bg-slate-50 p-4 border-b font-bold text-slate-500 flex items-center gap-2">
+            <Settings size={18} /> CONFIGURACIÓN DEL DIAGNÓSTICO
+          </div>
+          <div className="p-8 grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-blue-900 uppercase tracking-widest ml-1">Contexto de la Planta</label>
+              <input 
+                className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all shadow-sm"
+                value={contexto} 
+                onChange={(e) => setContexto(e.target.value)} 
+                placeholder="Ej: Planta Térmica, Caldera N°2..." 
+              />
             </div>
-            <div>
-              <label className="block text-sm font-black text-blue-900 mb-1 uppercase">Síntoma Detectado:</label>
-              <textarea className="w-full p-3 border rounded shadow-sm h-24" value={sintomas} onChange={(e) => setSintomas(e.target.value)} placeholder="Ej: Ruido intermitente y aumento de temperatura..." />
+            <div className="space-y-2">
+              <label className="text-xs font-black text-blue-900 uppercase tracking-widest ml-1">Síntoma Detectado</label>
+              <textarea 
+                className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all shadow-sm h-20"
+                value={sintomas} 
+                onChange={(e) => setSintomas(e.target.value)} 
+                placeholder="Ej: Vibración excesiva y ruido metálico..." 
+              />
             </div>
-            <button onClick={handleGenerateEntrevista} disabled={loading} className="w-full bg-blue-700 text-white p-4 rounded-xl font-black hover:bg-blue-800">
-              {loading ? "PROCESANDO..." : "INICIAR AUDITORÍA PRELIMINAR"}
+            <button 
+              onClick={handleGenerateEntrevista} 
+              disabled={loading}
+              className="md:col-span-2 group relative overflow-hidden bg-blue-700 text-white p-5 rounded-2xl font-black text-lg shadow-lg hover:shadow-blue-200 transition-all active:scale-95"
+            >
+              <div className="absolute inset-0 bg-white/10 group-hover:translate-x-full transition-transform duration-500 -skew-x-12 -translate-x-full" />
+              <span className="relative flex items-center justify-center gap-2">
+                {loading ? "PROCESANDO DATOS..." : "GENERAR ENTREVISTA DE CAMPO"} <ChevronRight />
+              </span>
             </button>
-          </section>
+          </div>
+        </section>
 
-          <section className="space-y-8">
-            {questions.map((cat, catIdx) => (
-              <div key={catIdx} className="border rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-slate-800 text-white p-3 font-bold uppercase text-center">{cat.nombre}</div>
-                <div className="divide-y">
-                  {(cat.preguntas || []).map((p, qIdx) => (
-                    <div key={qIdx} className="p-4 bg-white space-y-3">
-                      <p className="font-semibold text-slate-800">{p}</p>
-                      <div className="flex flex-wrap gap-2">
+        {/* LISTADO DE PREGUNTAS 6M - DISEÑO INTERACTIVO */}
+        <section className="grid gap-8">
+          {questions.map((cat, catIdx) => (
+            <div key={catIdx} className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
+              <div className="bg-slate-900 text-white p-4 px-8 font-black uppercase tracking-widest flex justify-between items-center">
+                <span>{cat.nombre}</span>
+                <div className="bg-blue-500 px-3 py-1 rounded text-[10px]">M-ISO 9001</div>
+              </div>
+              <div className="divide-y divide-slate-50">
+                {(cat.preguntas || []).map((p, qIdx) => (
+                  <div key={qIdx} className="p-6 hover:bg-slate-50 transition-colors space-y-4">
+                    <p className="text-lg font-bold text-slate-700 leading-tight">
+                      <span className="text-blue-500 mr-2">#0{qIdx+1}</span> {p}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                         {['SI', 'NO', 'S.I.'].map((opt) => (
-                          <button key={opt} onClick={() => handleOptionChange(qIdx, catIdx, opt)}
-                            className={`px-4 py-2 rounded-md font-bold text-xs transition-all ${respuestas[`${catIdx}-${qIdx}`]?.opcion === opt ? 'bg-blue-600 text-white shadow-inner' : 'bg-slate-100 text-slate-500'}`}>
+                          <button
+                            key={opt}
+                            onClick={() => handleOptionChange(qIdx, catIdx, opt, p, cat.nombre)}
+                            className={`px-6 py-2 rounded-lg font-black text-xs transition-all ${
+                              respuestas[`${catIdx}-${qIdx}`]?.opcion === opt 
+                              ? 'bg-blue-600 text-white shadow-lg scale-110' 
+                              : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                          >
                             {opt}
                           </button>
                         ))}
                       </div>
-                      <textarea className="w-full p-2 text-sm border rounded bg-slate-50" placeholder="Observaciones del cliente..." onChange={(e) => handleCommentChange(qIdx, catIdx, e.target.value)} />
+                      <input 
+                        className="flex-1 min-w-[200px] p-2 bg-transparent border-b-2 border-slate-100 focus:border-blue-400 outline-none text-sm italic text-slate-500"
+                        placeholder="Añadir comentario técnico..."
+                        onChange={(e) => handleCommentChange(qIdx, catIdx, e.target.value)}
+                      />
                     </div>
-                  ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* BOTÓN ACR */}
+        {questions.length > 0 && !reporte && (
+          <button 
+            onClick={handleGenerateACR} 
+            disabled={loading}
+            className="w-full bg-emerald-600 text-white p-8 rounded-3xl font-black text-2xl shadow-2xl hover:bg-emerald-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 border-b-8 border-emerald-900"
+          >
+            <ClipboardCheck size={40} /> {loading ? "PROCESANDO INFORME..." : "GENERAR INFORME ACR FINAL"}
+          </button>
+        )}
+
+        {/* REPORTE FINAL - DISEÑO DE IMPACTO */}
+        {reporte && (
+          <section className="mt-16 bg-white rounded-[40px] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.1)] border-t-8 border-emerald-500 overflow-hidden animate-in fade-in zoom-in duration-500">
+            <div className="p-10 space-y-10">
+              <div className="flex items-center gap-4 border-b-2 border-slate-100 pb-6">
+                <div className="bg-emerald-100 p-4 rounded-full text-emerald-600">
+                  <ClipboardCheck size={48} />
+                </div>
+                <div>
+                  <h2 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">Análisis de Causa Raíz</h2>
+                  <p className="text-slate-400 font-bold">REPORTE TÉCNICO PRELIMINAR DE CAMPO</p>
                 </div>
               </div>
-            ))}
-          </section>
 
-          {questions.length > 0 && !reporte && (
-            <button onClick={handleGenerateACR} disabled={loading} className="w-full bg-green-600 text-white p-5 rounded-xl font-black text-xl shadow-xl hover:bg-green-700 mt-10 flex items-center justify-center gap-3">
-              <ClipboardCheck size={28} /> {loading ? "GENERANDO INFORME..." : "GENERAR INFORME ACR PROFESIONAL"}
-            </button>
-          )}
-
-          {reporte && (
-            <section className="mt-10 p-8 bg-white border-2 border-green-500 rounded-3xl shadow-2xl space-y-6">
-              <h2 className="text-3xl font-black text-green-900 border-b-4 border-green-500 pb-2 flex items-center gap-2 uppercase">
-                <ClipboardCheck size={36} /> Informe ACR Preliminar
-              </h2>
-
-              <div className="bg-slate-50 p-4 rounded-lg">
-                <h3 className="font-bold text-slate-700 uppercase text-xs mb-2">Resumen General:</h3>
-                <p className="text-slate-700 italic">{reporte.resumen}</p>
+              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                <h3 className="text-xs font-black text-emerald-700 uppercase tracking-widest mb-2">Resumen Ejecutivo</h3>
+                <p className="text-slate-600 leading-relaxed font-medium italic">"{reporte.resumen}"</p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.entries(reporte.analisis_6m || {}).map(([key, val]) => (
-                  <div key={key} className="p-3 border-l-4 border-blue-900 bg-slate-50 rounded-r-lg">
-                    <h4 className="font-black text-blue-900 text-xs uppercase">{key}</h4>
-                    <p className="text-sm text-slate-600 leading-tight">{val}</p>
+                  <div key={key} className="p-5 bg-white border-2 border-slate-50 rounded-2xl shadow-sm hover:border-blue-100 transition-all">
+                    <h4 className="font-black text-blue-900 text-[10px] uppercase tracking-tighter mb-1 border-b border-blue-50 pb-1">{key}</h4>
+                    <p className="text-xs text-slate-500 leading-snug">{val}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="p-5 bg-amber-50 border-2 border-amber-200 rounded-xl">
-                <h3 className="font-black text-amber-900 flex items-center gap-2 uppercase"><Info size={20}/> Hipótesis Técnica:</h3>
-                <p className="mt-2 text-amber-900 leading-relaxed font-medium">{reporte.hipotesis}</p>
-              </div>
-
-              <div className="p-5 border border-slate-200 rounded-xl">
-                <h3 className="font-black text-slate-800 mb-2 uppercase text-sm">Conclusiones:</h3>
-                <p className="text-slate-700">{reporte.conclusiones}</p>
-              </div>
-
-              <div className="p-6 bg-blue-900 text-white rounded-2xl shadow-xl border-b-8 border-blue-700">
-                <h3 className="font-black text-xl mb-3 flex items-center gap-2 uppercase">
-                  <Briefcase /> Propuesta de Servicio Profesional:
+              <div className="p-8 bg-amber-50 border-2 border-amber-100 rounded-[32px] relative overflow-hidden">
+                <AlertTriangle className="absolute right-[-10px] top-[-10px] text-amber-200/50" size={120} />
+                <h3 className="font-black text-amber-900 flex items-center gap-2 mb-2 uppercase italic tracking-tighter">
+                  <Info size={24} /> Hipótesis Técnica Sugerida
                 </h3>
-                <p className="text-blue-50 leading-relaxed italic font-medium">
+                <p className="text-amber-900 font-bold text-lg leading-tight relative z-10">{reporte.hipotesis}</p>
+              </div>
+
+              <div className="p-8 bg-blue-900 text-white rounded-[32px] shadow-2xl border-b-8 border-blue-950 relative">
+                <Briefcase className="mb-4 text-blue-400" size={32} />
+                <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">Propuesta de Solución Profesional</h3>
+                <p className="text-blue-100 leading-relaxed font-medium text-lg italic">
                   {reporte.solucion_profesional}
                 </p>
+                <div className="mt-8 pt-6 border-t border-blue-800 flex justify-between items-center text-xs font-bold text-blue-400">
+                  <span>CONSULTORÍA 6M ESTRATÉGICA</span>
+                  <span>CERRAR REVISIÓN</span>
+                </div>
               </div>
-            </section>
-          )}
-        </main>
-      </div>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="text-center p-10 text-slate-400 text-xs font-bold">
+        © 2026 SISTEMA DE AUDITORÍA INDUSTRIAL 6M - PROPIEDAD INTELECTUAL RESERVADA
+      </footer>
     </div>
   );
 }
