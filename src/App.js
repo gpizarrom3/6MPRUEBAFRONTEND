@@ -1,366 +1,100 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { 
-  ShieldAlert, Hammer, Settings, Truck, Users, Ruler, CheckCircle2, 
-  ChevronDown, ChevronUp, Info, MessageSquare, Sparkles, Loader2, 
-  RefreshCcw, ArrowLeft, Mic, MicOff, Radio, BrainCircuit, Waves, 
-  ListFilter, Target, Wind, Pickaxe
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Mic, MicOff, Send, FileText, CheckCircle2 } from 'lucide-react';
 
-const App = () => {
-  // Estados de Entrada
-  const [manualDescription, setManualDescription] = useState('');
-  const [rawTranscript, setRawTranscript] = useState(''); 
-  const [capturedProblem, setCapturedProblem] = useState(''); 
-  
-  // Estados de Control
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isRefiningAudio, setIsRefiningAudio] = useState(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [dynamicQuestions, setDynamicQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [details, setDetails] = useState({});
-  const [expandedM, setExpandedM] = useState(null);
-  const [error, setError] = useState(null);
-  const [summary, setSummary] = useState('');
-  const [view, setView] = useState('interview'); 
-  const [acrReport, setAcrReport] = useState(null);
-
-  // Estados de Voz
+function App() {
+  const [contexto, setContexto] = useState('');
+  const [sintomas, setSintomas] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [questions, setQuestions] = useState([]); // Aquí se guardan las preguntas
 
-  // --- Lógica de Agrupación y Cálculo ---
-  const groupedQuestions = useMemo(() => {
-    const groups = {};
-    if (!Array.isArray(dynamicQuestions)) return groups;
-    dynamicQuestions.forEach(q => {
-      const cat = q.category || 'General';
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(q);
-    });
-    return groups;
-  }, [dynamicQuestions]);
-
-  const criticalPoints = useMemo(() => {
-    if (!Array.isArray(dynamicQuestions)) return [];
-    return dynamicQuestions.filter(q => {
-      const ans = answers[q.id];
-      const det = details[q.id] || '';
-      return ans === 'no' || ans === 'unknown' || det.length > 2;
-    });
-  }, [answers, details, dynamicQuestions]);
-
-  // --- Configuración de Reconocimiento de Voz ---
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'es-ES';
-
-      recognitionRef.current.onresult = (event) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
-        }
-        setRawTranscript(prev => prev + " " + currentTranscript);
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error("Error en reconocimiento:", event.error);
-        setIsListening(false);
-      };
-    }
-  }, []);
-
-  const toggleListening = async () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      refineAudioToProblem();
-    } else {
-      setRawTranscript('');
-      setCapturedProblem('');
-      recognitionRef.current?.start();
-      setIsListening(true);
-    }
-  };
-
-  const callGemini = async (prompt, systemPrompt, schema) => {
-    const API_URL = "https://sixmprueba.onrender.com/api/diagnostico"; 
-
-    let retries = 0;
-    while (retries <= 3) {
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, systemPrompt, schema })
-        });
-
-        if (!response.ok) throw new Error('Error en el servidor de IA.');
-        return await response.json(); 
-      } catch (err) {
-        if (retries === 3) throw err;
-        await new Promise(r => setTimeout(r, Math.pow(2, retries) * 1000));
-        retries++;
-      }
-    }
-  };
-
-  const refineAudioToProblem = async () => {
-    if (!rawTranscript.trim()) return;
-    setIsRefiningAudio(true);
+  const handleGenerateEntrevista = async () => {
+    setLoading(true);
+    setQuestions([]); // Limpiamos antes de empezar
     try {
-      const systemPrompt = `Eres un Ingeniero Consultor. Extrae síntomas técnicos de este audio. Responde en JSON.`;
-      const schema = {
-        type: "OBJECT",
-        properties: { problemStatement: { type: "STRING" } },
-        required: ["problemStatement"]
-      };
-      const result = await callGemini(rawTranscript, systemPrompt, schema);
-      setCapturedProblem(result.problemStatement || "No se detectó un problema claro.");
-    } catch (err) {
-      setError("No se pudo sintetizar el audio.");
+      const response = await fetch('https://sixmprueba.onrender.com/api/diagnostico', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `Analiza este síntoma: "${sintomas}". Contexto: "${contexto}".`,
+          systemPrompt: "Actúa como experto en mantenimiento industrial. Genera una auditoría 6M. RESPONDE ÚNICAMENTE EN FORMATO JSON con esta estructura exacta: { \"categorias\": [ { \"nombre\": \"MAQUINARIA\", \"preguntas\": [\"¿Pregunta 1?\", \"¿Pregunta 2?\"] } ] }"
+        })
+      });
+
+      const data = await response.json();
+      console.log("Datos recibidos:", data);
+
+      // --- EL PUENTE ---
+      // Verificamos si la IA usó 'categorias' o 'categories'
+      const rawQuestions = data.categorias || data.categories || [];
+      setQuestions(rawQuestions);
+
+    } catch (error) {
+      console.error("Error al procesar:", error);
+      alert("La IA respondió pero hubo un problema al mostrar las preguntas. Revisa la consola.");
     } finally {
-      setIsRefiningAudio(false);
+      setLoading(false);
     }
   };
-
-  const handleStartAI = async () => {
-    const combinedInput = `NOTAS: ${manualDescription} \n\n SÍNTOMAS: ${capturedProblem}`;
-    if (!combinedInput.trim()) return;
-    setIsAnalyzing(true);
-    setError(null);
-    try {
-      const systemPrompt = `Genera 10 preguntas cualitativas 6M (Material, Maquinaria, Mano de Obra, Método, Medición, Medio Ambiente). Responde en JSON.`;
-      const schema = {
-        type: "OBJECT",
-        properties: {
-          summary: { type: "STRING" },
-          questions: {
-            type: "ARRAY",
-            items: {
-              type: "OBJECT",
-              properties: {
-                id: { type: "STRING" },
-                category: { type: "STRING" },
-                question: { type: "STRING" },
-                blockArgument: { type: "STRING" }
-              },
-              required: ["id", "category", "question", "blockArgument"]
-            }
-          }
-        },
-        required: ["summary", "questions"]
-      };
-      const result = await callGemini(combinedInput, systemPrompt, schema);
-      setDynamicQuestions(result.questions || []);
-      setSummary(result.summary || "");
-      if (result.questions?.length > 0) setExpandedM(result.questions[0].category);
-    } catch (err) {
-      setError("Error al generar la entrevista.");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleGenerateReport = async () => {
-    setIsGeneratingReport(true);
-    try {
-      const findings = dynamicQuestions.map(q => ({
-        cat: q.category,
-        preg: q.question,
-        ans: answers[q.id] || 'N/A',
-        obs: details[q.id] || ''
-      }));
-      const prompt = `Genera ACR. Notas: ${manualDescription}. Hallazgos: ${JSON.stringify(findings)}.`;
-      const systemPrompt = `Genera informe ACR preliminar en JSON con execSummary, analysis6M (m y content), rootCauseHypothesis, conclusions y recommendations.`;
-      const schema = {
-        type: "OBJECT",
-        properties: {
-          execSummary: { type: "STRING" },
-          analysis6M: { type: "ARRAY", items: { type: "OBJECT", properties: { m: { type: "STRING" }, content: { type: "STRING" } } } },
-          rootCauseHypothesis: { type: "STRING" },
-          conclusions: { type: "ARRAY", items: { type: "STRING" } },
-          recommendations: { type: "ARRAY", items: { type: "STRING" } }
-        },
-        required: ["execSummary", "analysis6M", "rootCauseHypothesis", "conclusions", "recommendations"]
-      };
-      const result = await callGemini(prompt, systemPrompt, schema);
-      setAcrReport(result);
-      setView('report');
-    } catch (err) {
-      setError("Error al redactar el informe.");
-    } finally {
-      setIsGeneratingReport(false);
-    }
-  };
-
-  const getIcon = (cat) => {
-    const category = String(cat || '');
-    if (category.includes('Material')) return <Hammer size={20} />;
-    if (category.includes('Maquinaria')) return <Settings size={20} />;
-    if (category.includes('Mano')) return <Users size={20} />;
-    if (category.includes('Metodo') || category.includes('Método')) return <Truck size={20} />;
-    if (category.includes('Medicion') || category.includes('Medición')) return <Ruler size={20} />;
-    if (category.includes('Medio')) return <Wind size={20} />;
-    return <Info size={20} />;
-  };
-
-  if (view === 'report' && acrReport) {
-    return (
-      <div className="min-h-screen bg-slate-200 p-4 md:p-12 font-sans text-slate-900">
-        <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-sm border border-slate-300">
-          <div className="bg-slate-900 text-white p-10 border-b-4 border-blue-600">
-            <h1 className="text-3xl font-black uppercase tracking-tighter mb-2 italic">Informe de Ingeniería</h1>
-            <p className="text-blue-400 font-bold uppercase text-xs tracking-widest italic">Diagnóstico 6M</p>
-          </div>
-          <div className="p-12 space-y-8">
-            <section>
-              <h2 className="text-xs font-black text-blue-700 uppercase mb-2 border-b pb-1">Contexto</h2>
-              <p className="text-sm text-slate-600 italic">{acrReport.execSummary}</p>
-            </section>
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {acrReport.analysis6M?.map((item, i) => (
-                <div key={i} className="p-4 bg-slate-50 border rounded-lg">
-                  <h3 className="text-[10px] font-black text-slate-800 uppercase mb-1">{item.m}</h3>
-                  <p className="text-xs text-slate-500 leading-tight">{item.content}</p>
-                </div>
-              ))}
-            </section>
-            <section className="bg-blue-900 text-white p-6 rounded-xl border-l-4 border-blue-400">
-              <h2 className="text-xs font-black text-blue-300 uppercase mb-2">Hipótesis Causa Raíz</h2>
-              <p className="text-sm font-medium">{acrReport.rootCauseHypothesis}</p>
-            </section>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t pt-8">
-              <div>
-                <h2 className="text-xs font-black text-slate-800 uppercase mb-3">Conclusiones</h2>
-                <ul className="text-xs space-y-2 text-slate-500 italic">
-                  {acrReport.conclusions?.map((c, i) => <li key={i}>• {c}</li>)}
-                </ul>
-              </div>
-              <div>
-                <h2 className="text-xs font-black text-slate-800 uppercase mb-3">Recomendaciones</h2>
-                <ul className="text-xs space-y-2 text-slate-600 font-bold">
-                  {acrReport.recommendations?.map((r, i) => <li key={i} className="flex gap-2 text-blue-700"><CheckCircle2 size={12} /> {r}</li>)}
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div className="p-8 bg-slate-50 border-t flex justify-between">
-            <button onClick={() => setView('interview')} className="text-xs font-bold text-slate-400 flex items-center gap-2"><ArrowLeft size={14}/> Volver</button>
-            <button className="bg-slate-900 text-white px-6 py-2 rounded font-black text-xs uppercase" onClick={() => window.print()}>Exportar PDF</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
-      <header className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-black text-slate-800 uppercase italic">
-          <ShieldAlert className="inline text-blue-600 mr-2" /> Auditoría 6M
+    <div className="min-h-screen bg-slate-100 p-4 font-sans">
+      <header className="bg-blue-900 text-white p-6 rounded-xl shadow-lg mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <FileText /> Auditoría de Campo 6M - IA
         </h1>
-        {dynamicQuestions.length > 0 && (
-          <button onClick={() => window.location.reload()} className="text-[10px] font-black uppercase text-slate-400">
-            <RefreshCcw className="inline mr-1" size={12} /> Reiniciar
-          </button>
-        )}
       </header>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-5 space-y-6">
-          <section className="bg-white p-6 rounded-3xl shadow-sm border">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">01. Contexto de Visita</h2>
-            <textarea 
-              className="w-full p-4 bg-slate-50 rounded-2xl text-sm min-h-[100px] outline-none" 
-              value={manualDescription} 
-              onChange={(e) => setManualDescription(e.target.value)} 
-              placeholder="Ubicación, equipo..." 
-            />
-          </section>
+      <main className="max-w-4xl mx-auto grid gap-6">
+        {/* Entrada de Datos */}
+        <section className="bg-white p-6 rounded-xl shadow-md">
+          <label className="block text-sm font-bold mb-2">Contexto de la Visita:</label>
+          <input 
+            className="w-full p-2 border rounded mb-4"
+            placeholder="Ej: Planta de Celulosa, Línea 3..."
+            value={contexto}
+            onChange={(e) => setContexto(e.target.setContexto)}
+          />
+          
+          <label className="block text-sm font-bold mb-2">Síntomas detectados (Voz o Texto):</label>
+          <textarea 
+            className="w-full p-2 border rounded h-24 mb-4"
+            value={sintomas}
+            onChange={(e) => setSintomas(e.target.value)}
+          />
 
-          <section className="bg-white p-6 rounded-3xl shadow-sm border">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[10px] font-black text-blue-600 uppercase tracking-widest">02. Síntomas</h2>
-              <button onClick={toggleListening} className={`px-4 py-2 rounded-full text-[10px] font-black text-white ${isListening ? 'bg-red-500' : 'bg-blue-600'}`}>
-                {isListening ? 'Finalizar' : 'Escuchar'}
-              </button>
-            </div>
-            {capturedProblem && <div className="p-4 bg-green-50 rounded-xl text-xs italic text-green-800 mb-4">{capturedProblem}</div>}
-            <button 
-              onClick={handleStartAI} 
-              disabled={isAnalyzing || (!manualDescription && !capturedProblem)} 
-              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase"
-            >
-              {isAnalyzing ? <Loader2 className="animate-spin inline mr-2" /> : <Sparkles className="inline mr-2" />} Generar Entrevista
-            </button>
-            {error && <p className="text-red-500 text-[10px] mt-2 text-center">{error}</p>}
-          </section>
-        </div>
+          <button 
+            onClick={handleGenerateEntrevista}
+            disabled={loading}
+            className="w-full bg-black text-white p-4 rounded-lg font-bold hover:bg-gray-800 transition-colors"
+          >
+            {loading ? "GENERANDO AUDITORÍA..." : "GENERAR ENTREVISTA DE CAMPO"}
+          </button>
+        </section>
 
-        <div className="lg:col-span-7">
-          {dynamicQuestions.length === 0 ? (
-            <div className="h-full border-4 border-dashed rounded-[40px] flex items-center justify-center text-slate-300 p-12 text-center">
-              <p className="font-black uppercase tracking-widest text-xs">Esperando Entrada...</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="p-5 bg-blue-900 text-white rounded-3xl shadow-xl">
-                <p className="text-[10px] font-black text-blue-300 uppercase mb-1">Estrategia</p>
-                <p className="text-xs italic">{summary}</p>
-              </div>
-
-              {Object.entries(groupedQuestions).map(([cat, qs]) => (
-                <div key={cat} className="bg-white rounded-3xl border overflow-hidden">
-                  <button onClick={() => setExpandedM(expandedM === cat ? null : cat)} className="w-full p-6 flex justify-between items-center">
-                    <span className="font-black text-lg italic text-slate-700">{cat}</span>
-                    {expandedM === cat ? <ChevronUp /> : <ChevronDown />}
-                  </button>
-                  {expandedM === cat && (
-                    <div className="p-6 bg-slate-50/50 space-y-4">
-                      {qs.map((q) => (
-                        <div key={q.id} className="bg-white p-4 rounded-2xl border space-y-3">
-                          <p className="font-bold text-sm text-slate-800">{q.question}</p>
-                          <div className="flex gap-2">
-                            {['sí', 'no', 'unknown'].map(opt => (
-                              <button 
-                                key={opt} 
-                                onClick={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))} 
-                                className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase border-2 ${answers[q.id] === opt ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-100'}`}
-                              >
-                                {opt === 'unknown' ? 'S/I' : opt}
-                              </button>
-                            ))}
-                          </div>
-                          <textarea 
-                            className="w-full p-2 bg-slate-50 rounded-xl text-xs outline-none" 
-                            placeholder="Comentarios..." 
-                            value={details[q.id] || ''} 
-                            onChange={(e) => setDetails(prev => ({ ...prev, [q.id]: e.target.value }))} 
-                          />
-                        </div>
-                      ))}
+        {/* Mapeo de Preguntas en Pantalla */}
+        <section className="grid gap-4">
+          {questions.length > 0 ? (
+            questions.map((cat, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+                <h3 className="text-lg font-bold text-blue-900 mb-4 uppercase">{cat.nombre || cat.category}</h3>
+                <div className="space-y-3">
+                  {cat.preguntas && cat.preguntas.map((p, pIdx) => (
+                    <div key={pIdx} className="flex items-start gap-3 p-2 hover:bg-slate-50 rounded">
+                      <input type="checkbox" className="mt-1 h-5 w-5" />
+                      <p className="text-gray-700">{p}</p>
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-              <button 
-                onClick={handleGenerateReport} 
-                disabled={isGeneratingReport || criticalPoints.length === 0} 
-                className="w-full py-5 bg-blue-600 text-white rounded-3xl font-black text-xl uppercase italic shadow-xl"
-              >
-                {isGeneratingReport ? 'Redactando...' : 'Generar Reporte ACR'}
-              </button>
-            </div>
+              </div>
+            ))
+          ) : (
+            !loading && <p className="text-center text-gray-500 italic">No hay preguntas generadas aún.</p>
           )}
-        </div>
+        </section>
       </main>
     </div>
   );
-};
+}
 
 export default App;
