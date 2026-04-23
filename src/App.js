@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Activity, AlertCircle } from 'lucide-react';
+import { FileText, Activity } from 'lucide-react';
 
 function App() {
   const [contexto, setContexto] = useState('');
@@ -21,18 +21,13 @@ function App() {
       });
 
       const data = await response.json();
+      
+      // AQUÍ ES DONDE VEÍAS LAS PREGUNTAS EN LA CONSOLA
       console.log("DATOS RECIBIDOS:", data);
 
-      // --- LÓGICA DE DETECCIÓN AUTOMÁTICA ---
-      // Buscamos dentro del objeto 'data' cualquier cosa que parezca una lista
-      const listaExtraida = data.categorias || data.categories || data.preguntas || data.audit || (Array.isArray(data) ? data : []);
-      
-      if (listaExtraida.length > 0) {
-        setQuestions(listaExtraida);
-        console.log("Estado 'questions' actualizado con:", listaExtraida);
-      } else {
-        console.error("No se encontró una lista válida en el JSON");
-      }
+      // Lógica para intentar capturar las preguntas
+      const listaExtraida = data.categorias || data.categories || data.preguntas || [];
+      setQuestions(listaExtraida);
 
     } catch (error) {
       console.error("Error en el proceso:", error);
@@ -44,62 +39,44 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-3xl mx-auto">
-        <header className="bg-blue-900 text-white p-6 rounded-t-xl shadow-lg">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+        <header className="bg-blue-900 text-white p-6 rounded-t-xl shadow-lg text-center">
+          <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
             <Activity /> Auditoría 6M Pro
           </h1>
         </header>
 
         <main className="bg-white p-6 rounded-b-xl shadow-md space-y-4">
-          <section className="space-y-2">
-            <label className="font-bold text-gray-700">Contexto de la planta:</label>
-            <input 
-              className="w-full p-2 border rounded"
-              value={contexto}
-              onChange={(e) => setContexto(e.target.value)}
-              placeholder="Ej: Planta de vapor, caldera 2..."
-            />
-            <label className="font-bold text-gray-700">Síntoma observado:</label>
-            <textarea 
-              className="w-full p-2 border rounded h-24"
-              value={sintomas}
-              onChange={(e) => setSintomas(e.target.value)}
-              placeholder="Describe el ruido, vibración o falla..."
-            />
-            <button 
-              onClick={handleGenerateEntrevista}
-              disabled={loading}
-              className="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700"
-            >
-              {loading ? "PROCESANDO..." : "GENERAR AUDITORÍA 6M"}
-            </button>
-          </section>
+          <label className="font-bold text-gray-700">Contexto:</label>
+          <input className="w-full p-2 border rounded" value={contexto} onChange={(e) => setContexto(e.target.value)} />
+          
+          <label className="font-bold text-gray-700">Síntoma:</label>
+          <textarea className="w-full p-2 border rounded h-24" value={sintomas} onChange={(e) => setSintomas(e.target.value)} />
+          
+          <button 
+            onClick={handleGenerateEntrevista}
+            disabled={loading}
+            className="w-full bg-blue-600 text-white p-3 rounded-lg font-bold"
+          >
+            {loading ? "PROCESANDO..." : "GENERAR AUDITORÍA"}
+          </button>
 
-          {/* ESTA ES LA PARTE QUE MUESTRA LAS PREGUNTAS */}
-          <section className="mt-8 space-y-6">
+          <section className="mt-8">
             {questions.length > 0 ? (
               questions.map((cat, idx) => (
-                <div key={idx} className="border-l-4 border-blue-600 pl-4 py-2 bg-blue-50 rounded-r-lg">
-                  <h2 className="font-black text-blue-900 uppercase tracking-wider mb-3">
-                    {cat.nombre || cat.categoria || cat.name || "CATEGORÍA"}
-                  </h2>
-                  <div className="space-y-2">
-                    {(cat.preguntas || cat.questions || []).map((p, pIdx) => (
-                      <div key={pIdx} className="flex items-center gap-3 bg-white p-2 rounded shadow-sm">
-                        <input type="checkbox" className="w-5 h-5" />
-                        <span className="text-gray-800">{p}</span>
+                <div key={idx} className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-600">
+                  <h2 className="font-bold text-blue-900 uppercase">{cat.nombre || "Categoría"}</h2>
+                  <div className="mt-2">
+                    {(cat.preguntas || []).map((p, pIdx) => (
+                      <div key={pIdx} className="flex gap-2 mb-1">
+                        <input type="checkbox" />
+                        <span>{p}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               ))
             ) : (
-              !loading && (
-                <div className="text-center p-10 text-gray-400 border-2 border-dashed rounded-xl">
-                  <FileText className="mx-auto mb-2" size={48} />
-                  <p>Las preguntas aparecerán aquí después de generar la auditoría.</p>
-                </div>
-              )
+              !loading && <p className="text-gray-400 text-center">Las preguntas aparecerán aquí.</p>
             )}
           </section>
         </main>
