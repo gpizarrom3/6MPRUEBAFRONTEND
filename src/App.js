@@ -1,170 +1,151 @@
 import React, { useState } from 'react';
-import { FileText, Activity, ClipboardCheck, Send } from 'lucide-react';
+import { FileText, Activity, ClipboardCheck, Briefcase } from 'lucide-react';
 
 function App() {
   const [contexto, setContexto] = useState('');
   const [sintomas, setSintomas] = useState('');
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
-  const [respuestas, setRespuestas] = useState({}); // Para guardar SI/NO y comentarios
-  const [reporte, setReporte] = useState(null); // Para el Informe ACR final
+  const [respuestas, setRespuestas] = useState({});
+  const [reporte, setReporte] = useState(null);
 
-  // 1. Generar la Auditoría (Lo que ya te funciona)
   const handleGenerateEntrevista = async () => {
     setLoading(true);
     setQuestions([]);
     setReporte(null);
-    setRespuestas({});
     try {
       const response = await fetch('https://sixmprueba.onrender.com/api/diagnostico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `Analiza: ${sintomas}. Contexto: ${contexto}`,
-          systemPrompt: "Genera una auditoría 6M en JSON: { \"categorias\": [ { \"nombre\": \"...\", \"preguntas\": [\"...\"] } ] }"
+          prompt: `SÍNTOMAS: ${sintomas}. CONTEXTO: ${contexto}.`,
+          systemPrompt: `Eres un Consultor Senior de Mantenimiento. Genera una auditoría 6M preliminar.
+          REGLAS:
+          1. Preguntas 100% relacionadas al síntoma indicado.
+          2. PROHIBIDO pedir datos duros (medidas exactas, fechas, modelos, seriales).
+          3. Las preguntas deben ser cualitativas y observables (ej: ¿Se escuchan ruidos?, ¿Hay manchas de aceite?, ¿El personal ha notado cambios?).
+          Responde ÚNICAMENTE en JSON: { "categorias": [ { "nombre": "...", "preguntas": ["..."] } ] }`
         })
       });
       const data = await response.json();
-      const listaExtraida = data.categorias || data.categories || data.preguntas || [];
-      setQuestions(listaExtraida);
+      setQuestions(data.categorias || []);
     } catch (error) {
-      console.error("Error:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. Manejar las respuestas (SI, NO, S.I. y Texto)
-  const handleOptionChange = (qIdx, catIdx, valor) => {
-    const id = `${catIdx}-${qIdx}`;
-    setRespuestas(prev => ({
-      ...prev,
-      [id]: { ...prev[id], opcion: valor }
-    }));
-  };
-
-  const handleCommentChange = (qIdx, catIdx, texto) => {
-    const id = `${catIdx}-${qIdx}`;
-    setRespuestas(prev => ({
-      ...prev,
-      [id]: { ...prev[id], comentario: texto }
-    }));
-  };
-
-  // 3. Generar Informe ACR (La parte final)
   const handleGenerateACR = async () => {
     setLoading(true);
     try {
-      const promptACR = `Basado en estas respuestas de auditoría: ${JSON.stringify(respuestas)}, genera un informe ACR (Análisis de Causa Raíz) con conclusiones y recomendaciones técnicas.`;
-      
+      const promptACR = `SÍNTOMA: ${sintomas}. RESPUESTAS: ${JSON.stringify(respuestas)}`;
       const response = await fetch('https://sixmprueba.onrender.com/api/diagnostico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: promptACR,
-          systemPrompt: "Genera un informe técnico estructurado en JSON: { \"conclusion\": \"...\", \"recomendaciones\": [\"...\", \"...\"] }"
+          systemPrompt: `Eres un Ingeniero Experto en Confiabilidad. Genera un Informe ACR Preliminar.
+          ESTRUCTURA JSON REQUERIDA:
+          {
+            "resumen_general": "Resumen del caso",
+            "analisis_6m": { "maquinaria": "...", "mano_obra": "...", "metodos": "...", "materiales": "...", "medicion": "...", "medio_ambiente": "..." },
+            "hipotesis": "Hipótesis técnica de la falla",
+            "conclusiones": "Conclusión de hallazgos",
+            "recomendacion_comercial": "Solución propuesta + invitación a contratarnos para el servicio definitivo"
+          }`
         })
       });
       const data = await response.json();
       setReporte(data);
-      window.scrollTo(0, document.body.scrollHeight); // Bajar al reporte
     } catch (error) {
-      alert("Error al generar el reporte");
+      alert("Error en el reporte");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pb-20">
-      <div className="max-w-4xl mx-auto">
-        <header className="bg-blue-900 text-white p-6 rounded-t-xl shadow-lg flex items-center gap-3">
-          <Activity size={32} />
-          <h1 className="text-2xl font-bold uppercase tracking-tight">Auditoría Industrial 6M</h1>
+    <div className="min-h-screen bg-slate-100 p-4 pb-10">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <header className="bg-blue-900 text-white p-6 rounded-xl shadow-lg flex items-center gap-3">
+          <Briefcase size={32} />
+          <h1 className="text-2xl font-bold uppercase">Auditoría Técnica Preliminar</h1>
         </header>
 
-        <main className="bg-white p-6 rounded-b-xl shadow-md space-y-6">
-          {/* SECCIÓN DE ENTRADA */}
-          <section className="grid gap-4 bg-slate-50 p-4 rounded-lg border">
-            <div>
-              <label className="block text-sm font-black text-blue-900 mb-1">CONTEXTO:</label>
-              <input className="w-full p-3 border rounded shadow-sm" value={contexto} onChange={(e) => setContexto(e.target.value)} placeholder="Ej: Planta Térmica, Caldera N°2..." />
-            </div>
-            <div>
-              <label className="block text-sm font-black text-blue-900 mb-1">SÍNTOMA DETECTADO:</label>
-              <textarea className="w-full p-3 border rounded shadow-sm h-24" value={sintomas} onChange={(e) => setSintomas(e.target.value)} placeholder="Ej: Vibración excesiva en el rodamiento lado acople..." />
-            </div>
-            <button onClick={handleGenerateEntrevista} disabled={loading} className="w-full bg-blue-700 text-white p-4 rounded-xl font-black hover:bg-blue-800 transition-all">
-              {loading ? "PROCESANDO CON Gemini 2.5..." : "GENERAR ENTREVISTA DE CAMPO"}
-            </button>
-          </section>
+        <section className="bg-white p-6 rounded-xl shadow-md border space-y-4">
+          <input className="w-full p-3 border rounded" value={contexto} onChange={(e) => setContexto(e.target.value)} placeholder="¿Dónde nos encontramos? (Planta, Equipo...)" />
+          <textarea className="w-full p-3 border rounded h-24" value={sintomas} onChange={(e) => setSintomas(e.target.value)} placeholder="¿Qué síntomas presenta el equipo?" />
+          <button onClick={handleGenerateEntrevista} disabled={loading} className="w-full bg-blue-700 text-white p-4 rounded-xl font-bold">
+            {loading ? "ANALIZANDO..." : "INICIAR AUDITORÍA 6M"}
+          </button>
+        </section>
 
-          {/* LISTADO DE PREGUNTAS 6M */}
-          <section className="space-y-8">
-            {questions.map((cat, catIdx) => (
-              <div key={catIdx} className="border rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-slate-800 text-white p-3 font-bold uppercase tracking-widest text-center">
-                  {cat.nombre || cat.categoria}
+        {/* PREGUNTAS 6M */}
+        <div className="space-y-4">
+          {questions.map((cat, catIdx) => (
+            <div key={catIdx} className="bg-white border rounded-xl overflow-hidden shadow-sm">
+              <div className="bg-slate-800 text-white p-2 text-sm font-bold text-center">{cat.nombre}</div>
+              {cat.preguntas.map((p, qIdx) => (
+                <div key={qIdx} className="p-4 border-b last:border-0">
+                  <p className="text-slate-800 font-medium mb-3">{p}</p>
+                  <div className="flex gap-2">
+                    {['SI', 'NO', 'S.I.'].map(opt => (
+                      <button key={opt} onClick={() => setRespuestas({...respuestas, [`${catIdx}-${qIdx}`]: {...respuestas[`${catIdx}-${qIdx}`], opcion: opt, pregunta: p, categoria: cat.nombre}})}
+                        className={`px-3 py-1 rounded border text-xs font-bold ${respuestas[`${catIdx}-${qIdx}`]?.opcion === opt ? 'bg-blue-600 text-white' : 'bg-white'}`}>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="divide-y">
-                  {(cat.preguntas || []).map((p, qIdx) => (
-                    <div key={qIdx} className="p-4 bg-white space-y-3">
-                      <p className="font-semibold text-slate-800">{p}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {['SI', 'NO', 'S.I.'].map((opt) => (
-                          <button
-                            key={opt}
-                            onClick={() => handleOptionChange(qIdx, catIdx, opt)}
-                            className={`px-4 py-2 rounded-md font-bold text-xs transition-all ${
-                              respuestas[`${catIdx}-${qIdx}`]?.opcion === opt 
-                              ? 'bg-blue-600 text-white shadow-inner' 
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }`}
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                      <textarea
-                        className="w-full p-2 text-sm border rounded bg-slate-50"
-                        placeholder="Observaciones adicionales..."
-                        onChange={(e) => handleCommentChange(qIdx, catIdx, e.target.value)}
-                      />
-                    </div>
-                  ))}
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {questions.length > 0 && !reporte && (
+          <button onClick={handleGenerateACR} disabled={loading} className="w-full bg-green-600 text-white p-5 rounded-xl font-black shadow-lg">
+            GENERAR INFORME ACR PROFESIONAL
+          </button>
+        )}
+
+        {/* INFORME ACR COMPLETO */}
+        {reporte && (
+          <div className="bg-white p-8 rounded-2xl shadow-2xl border-t-8 border-green-500 space-y-6">
+            <h2 className="text-2xl font-black text-green-800 border-b pb-2 flex items-center gap-2">
+              <ClipboardCheck /> REPORTE DE CAUSA RAÍZ (PRELIMINAR)
+            </h2>
+            
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <h3 className="font-bold text-slate-700">RESUMEN GENERAL:</h3>
+              <p className="text-slate-600">{reporte.resumen_general}</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {Object.entries(reporte.analisis_6m || {}).map(([key, val]) => (
+                <div key={key} className="p-3 bg-white border rounded shadow-sm">
+                  <span className="text-xs font-black text-blue-700 uppercase">{key}</span>
+                  <p className="text-sm text-slate-600">{val}</p>
                 </div>
-              </div>
-            ))}
-          </section>
+              ))}
+            </div>
 
-          {/* BOTÓN REPORTE ACR */}
-          {questions.length > 0 && !reporte && (
-            <button onClick={handleGenerateACR} disabled={loading} className="w-full bg-green-600 text-white p-5 rounded-xl font-black text-xl shadow-xl hover:bg-green-700 mt-10 flex items-center justify-center gap-3">
-              <ClipboardCheck size={28} /> {loading ? "GENERANDO INFORME..." : "GENERAR INFORME ACR FINAL"}
-            </button>
-          )}
+            <div className="p-4 bg-amber-50 border-l-4 border-amber-400">
+              <h3 className="font-bold text-amber-800">HIPÓTESIS DEL PROBLEMA:</h3>
+              <p className="text-amber-900">{reporte.hipotesis}</p>
+            </div>
 
-          {/* RESULTADO INFORME ACR */}
-          {reporte && (
-            <section className="mt-10 p-6 bg-green-50 border-2 border-green-200 rounded-2xl shadow-inner animate-pulse-once">
-              <h2 className="text-2xl font-black text-green-900 mb-4 flex items-center gap-2">
-                <ClipboardCheck /> RESULTADO DEL ANÁLISIS (ACR)
-              </h2>
-              <div className="bg-white p-4 rounded-lg border border-green-100 mb-4">
-                <h3 className="font-bold text-green-800 mb-2">CONCLUSIÓN TÉCNICA:</h3>
-                <p className="text-slate-700 leading-relaxed">{reporte.conclusion}</p>
-              </div>
-              <div className="bg-white p-4 rounded-lg border border-green-100">
-                <h3 className="font-bold text-green-800 mb-2">RECOMENDACIONES:</h3>
-                <ul className="list-disc pl-5 space-y-2 text-slate-700">
-                  {reporte.recomendaciones?.map((rec, i) => (
-                    <li key={i}>{rec}</li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-          )}
-        </main>
+            <div className="space-y-2">
+              <h3 className="font-bold text-slate-700">CONCLUSIONES:</h3>
+              <p className="text-slate-600">{reporte.conclusiones}</p>
+            </div>
+
+            <div className="p-6 bg-blue-900 text-white rounded-xl shadow-xl">
+              <h3 className="font-bold mb-2 flex items-center gap-2"><Briefcase /> RECOMENDACIÓN Y SOLUCIÓN PROFESIONAL:</h3>
+              <p className="italic text-blue-100">{reporte.recomendacion_comercial}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
