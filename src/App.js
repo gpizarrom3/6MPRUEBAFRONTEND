@@ -1,11 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   ShieldAlert, Hammer, Settings, Truck, Users, Ruler, CheckCircle2, 
-  AlertTriangle, Factory, Pickaxe, ChevronDown, ChevronUp, Info, 
-  ClipboardList, MessageSquare, Sparkles, Loader2, RefreshCcw, 
-  PlusCircle, BookOpen, FileText, ArrowLeft, Printer, Mic, MicOff,
-  Radio, BrainCircuit, Headphones, Waves, ListFilter, Target,
-  Wind
+  ChevronDown, ChevronUp, Info, MessageSquare, Sparkles, Loader2, 
+  RefreshCcw, ArrowLeft, Mic, MicOff, Radio, BrainCircuit, Waves, 
+  ListFilter, Target, Wind, Pickaxe
 } from 'lucide-react';
 
 const App = () => {
@@ -90,7 +88,6 @@ const App = () => {
   };
 
   const callGemini = async (prompt, systemPrompt, schema) => {
-    // CORRECCIÓN: Se añade /api/diagnostico al final de la URL
     const API_URL = "https://sixmprueba.onrender.com/api/diagnostico"; 
 
     let retries = 0;
@@ -116,7 +113,7 @@ const App = () => {
     if (!rawTranscript.trim()) return;
     setIsRefiningAudio(true);
     try {
-      const systemPrompt = `Eres un Ingeniero Consultor en una reunión inicial. Extrae síntomas: ruidos, vibraciones, cambios visuales. Responde en JSON.`;
+      const systemPrompt = `Eres un Ingeniero Consultor. Extrae síntomas técnicos de este audio. Responde en JSON.`;
       const schema = {
         type: "OBJECT",
         properties: { problemStatement: { type: "STRING" } },
@@ -135,8 +132,9 @@ const App = () => {
     const combinedInput = `NOTAS: ${manualDescription} \n\n SÍNTOMAS: ${capturedProblem}`;
     if (!combinedInput.trim()) return;
     setIsAnalyzing(true);
+    setError(null);
     try {
-      const systemPrompt = `Eres un Ingeniero Consultor. Genera 10 preguntas cualitativas 6M (Material, Maquinaria, Mano de Obra, Método, Medición, Medio Ambiente). Responde en JSON con 'summary' y 'questions'.`;
+      const systemPrompt = `Genera 10 preguntas cualitativas 6M (Material, Maquinaria, Mano de Obra, Método, Medición, Medio Ambiente). Responde en JSON.`;
       const schema = {
         type: "OBJECT",
         properties: {
@@ -162,7 +160,7 @@ const App = () => {
       setSummary(result.summary || "");
       if (result.questions?.length > 0) setExpandedM(result.questions[0].category);
     } catch (err) {
-      setError("Error al generar entrevista.");
+      setError("Error al generar la entrevista.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -177,8 +175,8 @@ const App = () => {
         ans: answers[q.id] || 'N/A',
         obs: details[q.id] || ''
       }));
-      const prompt = `Genera ACR preliminar. Notas: ${manualDescription}. Problema: ${capturedProblem}. Hallazgos: ${JSON.stringify(findings)}.`;
-      const systemPrompt = `Eres experto en ACR. Genera informe con execSummary, analysis6M (array de {m, content}), rootCauseHypothesis, conclusions (array), recommendations (array). Responde en JSON.`;
+      const prompt = `Genera ACR. Notas: ${manualDescription}. Hallazgos: ${JSON.stringify(findings)}.`;
+      const systemPrompt = `Genera informe ACR preliminar en JSON con execSummary, analysis6M (m y content), rootCauseHypothesis, conclusions y recommendations.`;
       const schema = {
         type: "OBJECT",
         properties: {
@@ -194,7 +192,7 @@ const App = () => {
       setAcrReport(result);
       setView('report');
     } catch (err) {
-      setError("No se pudo redactar el informe.");
+      setError("Error al redactar el informe.");
     } finally {
       setIsGeneratingReport(false);
     }
@@ -213,59 +211,63 @@ const App = () => {
 
   if (view === 'report' && acrReport) {
     return (
-        <div className="min-h-screen bg-slate-200 p-4 md:p-12 font-sans text-slate-900">
-            <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-sm overflow-hidden border border-slate-300">
-                <div className="bg-slate-900 text-white p-10 border-b-4 border-blue-600">
-                    <h1 className="text-3xl font-black uppercase tracking-tighter mb-2 italic">Informe Preliminar de Ingeniería</h1>
-                    <p className="text-blue-400 font-bold uppercase text-xs tracking-widest italic">Diagnóstico Primario de Campo</p>
+      <div className="min-h-screen bg-slate-200 p-4 md:p-12 font-sans text-slate-900">
+        <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-sm border border-slate-300">
+          <div className="bg-slate-900 text-white p-10 border-b-4 border-blue-600">
+            <h1 className="text-3xl font-black uppercase tracking-tighter mb-2 italic">Informe de Ingeniería</h1>
+            <p className="text-blue-400 font-bold uppercase text-xs tracking-widest italic">Diagnóstico 6M</p>
+          </div>
+          <div className="p-12 space-y-8">
+            <section>
+              <h2 className="text-xs font-black text-blue-700 uppercase mb-2 border-b pb-1">Contexto</h2>
+              <p className="text-sm text-slate-600 italic">{acrReport.execSummary}</p>
+            </section>
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {acrReport.analysis6M?.map((item, i) => (
+                <div key={i} className="p-4 bg-slate-50 border rounded-lg">
+                  <h3 className="text-[10px] font-black text-slate-800 uppercase mb-1">{item.m}</h3>
+                  <p className="text-xs text-slate-500 leading-tight">{item.content}</p>
                 </div>
-                <div className="p-12 space-y-8">
-                    <section>
-                        <h2 className="text-xs font-black text-blue-700 uppercase mb-2 border-b pb-1">Contexto Detectado</h2>
-                        <p className="text-sm text-slate-600 italic leading-relaxed">{acrReport.execSummary}</p>
-                    </section>
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {acrReport.analysis6M?.map((item, i) => (
-                            <div key={i} className="p-4 bg-slate-50 border rounded-lg">
-                                <h3 className="text-[10px] font-black text-slate-800 uppercase mb-1">{item.m}</h3>
-                                <p className="text-xs text-slate-500 leading-tight">{item.content}</p>
-                            </div>
-                        ))}
-                    </section>
-                    <section className="bg-blue-900 text-white p-6 rounded-xl shadow-lg border-l-4 border-blue-400">
-                        <h2 className="text-xs font-black text-blue-300 uppercase mb-2">Hipótesis Técnica Preliminar</h2>
-                        <p className="text-sm font-medium">{acrReport.rootCauseHypothesis}</p>
-                    </section>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t pt-8">
-                        <div>
-                            <h2 className="text-xs font-black text-slate-800 uppercase mb-3">Conclusiones</h2>
-                            <ul className="text-xs space-y-2 text-slate-500 italic">
-                                {acrReport.conclusions?.map((c, i) => <li key={i}>• {c}</li>)}
-                            </ul>
-                        </div>
-                        <div>
-                            <h2 className="text-xs font-black text-slate-800 uppercase mb-3">Estudios Recomendados</h2>
-                            <ul className="text-xs space-y-2 text-slate-600 font-bold">
-                                {acrReport.recommendations?.map((r, i) => <li key={i} className="flex gap-2 text-blue-700"><CheckCircle2 size={12} /> {r}</li>)}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-8 bg-slate-50 border-t flex justify-between">
-                    <button onClick={() => setView('interview')} className="text-xs font-bold text-slate-400 flex items-center gap-2"><ArrowLeft size={14}/> Volver</button>
-                    <button className="bg-slate-900 text-white px-6 py-2 rounded font-black text-xs uppercase" onClick={() => window.print()}>PDF</button>
-                </div>
+              ))}
+            </section>
+            <section className="bg-blue-900 text-white p-6 rounded-xl border-l-4 border-blue-400">
+              <h2 className="text-xs font-black text-blue-300 uppercase mb-2">Hipótesis Causa Raíz</h2>
+              <p className="text-sm font-medium">{acrReport.rootCauseHypothesis}</p>
+            </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t pt-8">
+              <div>
+                <h2 className="text-xs font-black text-slate-800 uppercase mb-3">Conclusiones</h2>
+                <ul className="text-xs space-y-2 text-slate-500 italic">
+                  {acrReport.conclusions?.map((c, i) => <li key={i}>• {c}</li>)}
+                </ul>
+              </div>
+              <div>
+                <h2 className="text-xs font-black text-slate-800 uppercase mb-3">Recomendaciones</h2>
+                <ul className="text-xs space-y-2 text-slate-600 font-bold">
+                  {acrReport.recommendations?.map((r, i) => <li key={i} className="flex gap-2 text-blue-700"><CheckCircle2 size={12} /> {r}</li>)}
+                </ul>
+              </div>
             </div>
+          </div>
+          <div className="p-8 bg-slate-50 border-t flex justify-between">
+            <button onClick={() => setView('interview')} className="text-xs font-bold text-slate-400 flex items-center gap-2"><ArrowLeft size={14}/> Volver</button>
+            <button className="bg-slate-900 text-white px-6 py-2 rounded font-black text-xs uppercase" onClick={() => window.print()}>Exportar PDF</button>
+          </div>
         </div>
+      </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
       <header className="max-w-7xl mx-auto mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-black text-slate-800 uppercase italic"><ShieldAlert className="inline text-blue-600 mr-2" /> Auditoría 6M</h1>
+        <h1 className="text-2xl font-black text-slate-800 uppercase italic">
+          <ShieldAlert className="inline text-blue-600 mr-2" /> Auditoría 6M
+        </h1>
         {dynamicQuestions.length > 0 && (
-          <button onClick={() => window.location.reload()} className="text-[10px] font-black uppercase text-slate-400"><RefreshCcw className="inline mr-1" size={12} /> Reiniciar</button>
+          <button onClick={() => window.location.reload()} className="text-[10px] font-black uppercase text-slate-400">
+            <RefreshCcw className="inline mr-1" size={12} /> Reiniciar
+          </button>
         )}
       </header>
 
@@ -273,7 +275,12 @@ const App = () => {
         <div className="lg:col-span-5 space-y-6">
           <section className="bg-white p-6 rounded-3xl shadow-sm border">
             <h2 className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">01. Contexto de Visita</h2>
-            <textarea className="w-full p-4 bg-slate-50 rounded-2xl text-sm min-h-[100px] outline-none" value={manualDescription} onChange={(e) => setManualDescription(e.target.value)} placeholder="Ubicación, equipo..." />
+            <textarea 
+              className="w-full p-4 bg-slate-50 rounded-2xl text-sm min-h-[100px] outline-none" 
+              value={manualDescription} 
+              onChange={(e) => setManualDescription(e.target.value)} 
+              placeholder="Ubicación, equipo..." 
+            />
           </section>
 
           <section className="bg-white p-6 rounded-3xl shadow-sm border">
@@ -283,10 +290,15 @@ const App = () => {
                 {isListening ? 'Finalizar' : 'Escuchar'}
               </button>
             </div>
-            {capturedProblem && <div className="p-4 bg-green-50 rounded-xl text-xs italic text-green-800">{capturedProblem}</div>}
-            <button onClick={handleStartAI} disabled={isAnalyzing} className="w-full mt-4 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase">
+            {capturedProblem && <div className="p-4 bg-green-50 rounded-xl text-xs italic text-green-800 mb-4">{capturedProblem}</div>}
+            <button 
+              onClick={handleStartAI} 
+              disabled={isAnalyzing || (!manualDescription && !capturedProblem)} 
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase"
+            >
               {isAnalyzing ? <Loader2 className="animate-spin inline mr-2" /> : <Sparkles className="inline mr-2" />} Generar Entrevista
             </button>
+            {error && <p className="text-red-500 text-[10px] mt-2 text-center">{error}</p>}
           </section>
         </div>
 
@@ -315,20 +327,32 @@ const App = () => {
                           <p className="font-bold text-sm text-slate-800">{q.question}</p>
                           <div className="flex gap-2">
                             {['sí', 'no', 'unknown'].map(opt => (
-                              <button key={opt} onClick={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))} 
-                                className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase border-2 ${answers[q.id] === opt ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-100'}`}>
+                              <button 
+                                key={opt} 
+                                onClick={() => setAnswers(prev => ({ ...prev, [q.id]: opt }))} 
+                                className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase border-2 ${answers[q.id] === opt ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-100'}`}
+                              >
                                 {opt === 'unknown' ? 'S/I' : opt}
                               </button>
                             ))}
                           </div>
-                          <textarea className="w-full p-2 bg-slate-50 rounded-xl text-xs outline-none" placeholder="Comentarios..." value={details[q.id] || ''} onChange={(e) => setDetails(prev => ({ ...prev, [q.id]: e.target.value }))} />
+                          <textarea 
+                            className="w-full p-2 bg-slate-50 rounded-xl text-xs outline-none" 
+                            placeholder="Comentarios..." 
+                            value={details[q.id] || ''} 
+                            onChange={(e) => setDetails(prev => ({ ...prev, [q.id]: e.target.value }))} 
+                          />
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               ))}
-              <button onClick={handleGenerateReport} disabled={isGeneratingReport || criticalPoints.length === 0} className="w-full py-5 bg-blue-600 text-white rounded-3xl font-black text-xl uppercase italic shadow-xl">
+              <button 
+                onClick={handleGenerateReport} 
+                disabled={isGeneratingReport || criticalPoints.length === 0} 
+                className="w-full py-5 bg-blue-600 text-white rounded-3xl font-black text-xl uppercase italic shadow-xl"
+              >
                 {isGeneratingReport ? 'Redactando...' : 'Generar Reporte ACR'}
               </button>
             </div>
