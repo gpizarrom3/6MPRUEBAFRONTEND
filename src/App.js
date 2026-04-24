@@ -3,6 +3,7 @@ import {
   Activity, ClipboardCheck, Briefcase, 
   Info, ChevronRight, MessageSquare, MapPin 
 } from 'lucide-react';
+import AuthCorner from './AuthCorner'; // <-- NUEVA IMPORTACIÓN
 
 function App() {
   const [contexto, setContexto] = useState('');
@@ -12,7 +13,7 @@ function App() {
   const [respuestas, setRespuestas] = useState({});
   const [reporte, setReporte] = useState(null);
 
-  // --- LÓGICA (Se mantiene igual para no romper la conexión) ---
+  // --- LÓGICA (Se mantiene intacta) ---
   const handleGenerateEntrevista = async () => {
     setLoading(true);
     setQuestions([]);
@@ -62,6 +63,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      
+      {/* BOTÓN DE LOGIN EN LA ESQUINA */}
+      <AuthCorner />
+
       {/* HEADER PROFESIONAL */}
       <header className="bg-white border-b border-slate-200 p-6 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
@@ -78,10 +83,10 @@ function App() {
       </header>
 
       <main className="max-w-4xl mx-auto p-6 py-12 space-y-12">
-        
-        {/* NUEVA SECCIÓN: CUÉNTANOS TU PROBLEMA */}
+        {/* Tu contenido de secciones se mantiene igual... */}
         <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="text-center space-y-2">
+           {/* ... (el resto de tu código de inputs y botones) ... */}
+           <div className="text-center space-y-2">
             <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
               ¡Hola! <span className="text-blue-600">Cuéntanos tu problema.</span>
             </h2>
@@ -92,7 +97,6 @@ function App() {
 
           <div className="bg-white rounded-[32px] shadow-2xl shadow-blue-100 p-8 md:p-12 border border-slate-100 space-y-8">
             <div className="grid md:grid-cols-2 gap-8">
-              {/* LUGAR O EQUIPO */}
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm font-black text-blue-900 uppercase tracking-widest">
                   <MapPin size={18} className="text-blue-500" /> ¿En qué lugar o equipo ocurre?
@@ -105,7 +109,6 @@ function App() {
                 />
               </div>
 
-              {/* DESCRIPCIÓN DEL SÍNTOMA */}
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm font-black text-blue-900 uppercase tracking-widest">
                   <MessageSquare size={18} className="text-blue-500" /> ¿Qué está pasando exactamente?
@@ -131,7 +134,8 @@ function App() {
           </div>
         </section>
 
-        {/* LISTADO DE PREGUNTAS (Estilo Moderno) */}
+        {/* Mantenemos el renderizado de preguntas y reporte final igual que en tu código... */}
+        {/* ... (Aquí sigue todo tu código de questions.map y reporte) ... */}
         <section className="space-y-8">
           {questions.map((cat, catIdx) => (
             <div key={catIdx} className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden">
@@ -171,7 +175,6 @@ function App() {
           ))}
         </section>
 
-        {/* BOTÓN REPORTE ACR */}
         {questions.length > 0 && !reporte && (
           <div className="py-10">
             <button 
@@ -184,12 +187,9 @@ function App() {
           </div>
         )}
 
-        {/* RESULTADO ACR (Mantenido el diseño Premium) */}
         {reporte && (
           <section id="reporte-final" className="bg-white rounded-[40px] shadow-2xl border-t-8 border-emerald-500 overflow-hidden animate-in zoom-in duration-500">
-            {/* Contenido del reporte igual al anterior, pero con padding y tipografía mejorada */}
             <div className="p-10 space-y-10">
-               {/* ... (resto del diseño del reporte igual al anterior para mantener profesionalismo) ... */}
                <div className="flex items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
                 <ClipboardCheck size={40} className="text-emerald-500" />
                 <h2 className="text-3xl font-black uppercase tracking-tighter">Informe de Causa Raíz</h2>
