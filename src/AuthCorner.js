@@ -14,7 +14,8 @@ const AuthCorner = () => {
   }, []);
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+// En AuthCorner.js, cambia la línea 15 por esta:
+<div className="fixed top-6 right-6 z-[100]">
       {user ? (
         <div className="flex items-center gap-3 bg-white p-2 rounded-full shadow-md border">
           <img src={user.photoURL} alt="pfp" className="w-8 h-8 rounded-full" />
