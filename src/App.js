@@ -57,7 +57,7 @@ function App() {
       const checkoutSessionsRef = collection(db, "customers", userId, "checkout_sessions");
       
       const docRef = await addDoc(checkoutSessionsRef, {
-        price: "TU_CODIGO_PRICE_AQUI", // <--- PEGA AQUÍ TU price_...
+        price: "prod_UPID1p8AuNIkba", // <--- PEGA AQUÍ TU price_...
         success_url: window.location.origin,
         cancel_url: window.location.origin,
       });
