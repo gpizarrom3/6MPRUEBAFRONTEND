@@ -34,14 +34,14 @@ function App() {
   const renderText = (val) => {
     if (!val) return "Info no disponible";
     if (typeof val === 'string') return val;
-    return val.hipotesis || String(val);
+    return val.hipotesis || val.resumen_6m || "Dictamen listo";
   };
 
   const handleGenerateEntrevista = async () => {
     if (!sintomas || !contexto) return alert("Complete los campos.");
     setLoading(true); setCategorias([]); setReporte(null);
     
-    // Búsqueda de Antecedentes
+    // Correlación de Antecedentes
     const norm = (t) => t ? t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
     const palabrasClave = norm(sintomas).split(/\s+/).filter(p => p.length > 4);
     const coincidencias = incidencias
@@ -55,14 +55,36 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: `SÍNTOMA: ${sintomas}. CONTEXTO: ${contexto}` })
       });
-      const d = await res.json();
       
-      // SOLUCIÓN AL PROBLEMA DE LAS PREGUNTAS INVISIBLES:
-      // Buscamos las categorías en cualquier variante de nombre que envíe la IA
-      const dataExtraida = d.categorias || d.categories || d.data?.categorias || [];
-      setCategorias(dataExtraida);
+      const d = await res.json();
+      console.log("DATOS RECIBIDOS:", d);
 
-    } catch (e) { alert("Error al obtener protocolo."); } finally { setLoading(false); }
+      // --- BUSCADOR UNIVERSAL DE PREGUNTAS ---
+      // Si la IA lo llamó 'categorias', 'categories', o si el objeto es directamente el array
+      let datosFinales = [];
+      if (Array.isArray(d)) {
+        datosFinales = d;
+      } else if (d.categorias && Array.isArray(d.categorias)) {
+        datosFinales = d.categorias;
+      } else if (d.categories && Array.isArray(d.categories)) {
+        datosFinales = d.categories;
+      } else {
+        // Si la IA lo metió dentro de otra propiedad, la buscamos
+        const keyArray = Object.keys(d).find(k => Array.isArray(d[k]));
+        if (keyArray) datosFinales = d[keyArray];
+      }
+
+      if (datosFinales.length > 0) {
+        setCategorias(datosFinales);
+      } else {
+        alert("La IA no envió el formato esperado. Intente de nuevo.");
+      }
+
+    } catch (e) { 
+      alert("Error de red."); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const handleGenerateACR = async () => {
@@ -99,10 +121,9 @@ function App() {
       <main className="flex-1 overflow-y-auto p-12">
         <div className="max-w-4xl mx-auto">
           
-          {/* MONITOR */}
           {tabActiva === 'inicio' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Status de Planta</h2>
+            <div className="space-y-8">
+              <h2 className="text-4xl font-black text-slate-900 italic tracking-tighter uppercase">Status de Planta</h2>
               <div className="grid grid-cols-3 gap-6">
                 <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
                   <Clock className="text-cyan-500 mb-4" size={32} />
@@ -123,20 +144,19 @@ function App() {
             </div>
           )}
 
-          {/* AUDITORÍA */}
           {tabActiva === 'nueva' && (
             <div className="space-y-8">
               {!categorias.length && !reporte && (
                 <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
-                  <h2 className="text-2xl font-black uppercase italic">Nuevo Expediente</h2>
-                  <input className="w-full p-4 bg-slate-50 rounded-xl border-none ring-1 ring-slate-200" value={contexto} onChange={(e)=>setContexto(e.target.value)} placeholder="TAG del Equipo" />
-                  <textarea className="w-full p-4 bg-slate-50 rounded-xl border-none ring-1 ring-slate-200 h-32" value={sintomas} onChange={(e)=>setSintomas(e.target.value)} placeholder="Descripción de la falla..." />
-                  <button onClick={handleGenerateEntrevista} disabled={loading} className="w-full bg-slate-900 text-white p-5 rounded-xl font-black uppercase tracking-widest hover:bg-cyan-600 transition-all">{loading ? "Conectando con IA..." : "Iniciar Protocolo 6M"}</button>
+                  <h2 className="text-2xl font-black uppercase italic">Nuevo Análisis</h2>
+                  <input className="w-full p-4 bg-slate-50 rounded-xl ring-1 ring-slate-200 border-none" value={contexto} onChange={(e)=>setContexto(e.target.value)} placeholder="TAG del Equipo" />
+                  <textarea className="w-full p-4 bg-slate-50 rounded-xl ring-1 ring-slate-200 border-none h-32" value={sintomas} onChange={(e)=>setSintomas(e.target.value)} placeholder="Describa la anomalía..." />
+                  <button onClick={handleGenerateEntrevista} disabled={loading} className="w-full bg-slate-900 text-white p-5 rounded-xl font-black uppercase tracking-widest hover:bg-cyan-600 transition-all">{loading ? "Llamando a Gemini 2.5..." : "Iniciar Protocolo 6M"}</button>
                 </div>
               )}
 
               {categorias.length > 0 && !reporte && (
-                <div className="space-y-6">
+                <div className="space-y-6 animate-in slide-in-from-bottom-4">
                   {antecedenteEncontrado && (
                     <div className="bg-[#0F172A] text-white p-8 rounded-3xl border-l-8 border-cyan-500 shadow-xl">
                       <div className="flex items-center gap-2 mb-4 text-cyan-400 font-bold text-xs uppercase"><Database size={16}/> Antecedentes Detectados</div>
@@ -148,13 +168,18 @@ function App() {
                       ))}
                     </div>
                   )}
+
                   {categorias.map((cat, idx) => (
-                    <div key={idx} className="bg-white p-8 rounded-3xl border border-slate-200">
-                      <h4 className="font-black text-cyan-600 uppercase text-xs mb-4">{cat.nombre}</h4>
-                      {cat.preguntas.map((pre, pIdx) => (
+                    <div key={idx} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                      <h4 className="font-black text-cyan-600 uppercase text-xs mb-4">{cat.nombre || cat.category}</h4>
+                      {(cat.preguntas || cat.questions || []).map((pre, pIdx) => (
                         <div key={pIdx} className="mb-4 last:mb-0">
-                          <p className="font-bold text-slate-700 mb-2">{pre.texto}</p>
-                          <input onChange={(e) => setRespuestas({...respuestas, [`${cat.nombre}-${pIdx}`]: e.target.value})} className="w-full p-3 bg-slate-50 rounded-lg border-none ring-1 ring-slate-200" placeholder="Respuesta..." />
+                          <p className="font-bold text-slate-700 mb-2">{pre.texto || pre.question}</p>
+                          <input 
+                            onChange={(e) => setRespuestas({...respuestas, [`${idx}-${pIdx}`]: e.target.value})} 
+                            className="w-full p-3 bg-slate-50 rounded-lg ring-1 ring-slate-200 border-none" 
+                            placeholder="Escriba su hallazgo..." 
+                          />
                         </div>
                       ))}
                     </div>
@@ -165,17 +190,16 @@ function App() {
 
               {reporte && (
                 <div className="bg-[#0F172A] text-white p-12 rounded-[3rem] shadow-2xl animate-in zoom-in-95">
-                  <h3 className="text-cyan-500 font-black text-xs uppercase tracking-[0.3em] mb-4">Dictamen de Causa Raíz</h3>
-                  <p className="text-3xl font-black italic border-l-4 border-cyan-500 pl-6 mb-8">"{renderText(reporte.hipotesis)}"</p>
-                  <button onClick={() => {setReporte(null); setCategorias([]); setSintomas(''); setContexto('');}} className="text-slate-400 text-xs font-bold uppercase hover:text-white underline">Nueva Auditoría</button>
+                  <h3 className="text-cyan-500 font-black text-xs uppercase tracking-[0.3em] mb-4">Dictamen Final</h3>
+                  <p className="text-3xl font-black italic border-l-4 border-cyan-500 pl-6 mb-8">"{renderText(reporte.hipotesis || reporte.conclusion)}"</p>
+                  <button onClick={() => {setReporte(null); setCategorias([]); setSintomas(''); setContexto('');}} className="text-slate-400 text-xs font-bold uppercase hover:text-white underline underline-offset-8">Nueva Auditoría</button>
                 </div>
               )}
             </div>
           )}
 
-          {/* HISTORIAL */}
           {tabActiva === 'bitacora' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-8">
               <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Historial Técnico</h2>
               <div className="grid gap-4">
                 {incidencias.map((i) => (
