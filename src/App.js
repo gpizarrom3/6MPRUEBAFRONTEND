@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Zap, History, Clock, CheckCircle2, AlertCircle, ShieldAlert, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Zap, History, Clock, CheckCircle2, AlertCircle, ShieldAlert, CreditCard } from 'lucide-center';
 import { collection, query, onSnapshot, addDoc, orderBy, serverTimestamp, where } from "firebase/firestore";
 import { db, auth } from './firebase';
 import AuthCorner from './AuthCorner';
@@ -27,7 +27,6 @@ function App() {
   const [user, setUser] = useState(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  // ✅ Estado de error en lugar de alert()
   const [error, setError] = useState(null);
 
   // 1. GESTIÓN DE AUTH Y SUSCRIPCIÓN
@@ -39,12 +38,11 @@ function App() {
           collection(db, "customers", u.uid, "subscriptions"),
           where("status", "in", ["active", "trialing"])
         );
-        // ✅ Guardamos el unsubscribe del onSnapshot para evitar memory leaks
         const unsubSnap = onSnapshot(subQuery, (snapshot) => {
           setIsSubscribed(!snapshot.empty);
           setCheckingAuth(false);
         });
-        return unsubSnap; // se limpia al cambiar de usuario
+        return unsubSnap;
       } else {
         setIsSubscribed(false);
         setCheckingAuth(false);
@@ -53,14 +51,14 @@ function App() {
     return () => unsubAuth();
   }, []);
 
-  // 2. CARGA DE INCIDENCIAS (solo si está suscrito)
+  // 2. CARGA DE INCIDENCIAS
   useEffect(() => {
     if (user && isSubscribed) {
       const q = query(collection(db, "customers", user.uid, "incidencias"), orderBy("fecha", "desc"));
       const unsub = onSnapshot(q, (snaps) => {
         setIncidencias(snaps.docs.map(d => ({ id: d.id, ...d.data() })));
       });
-      return () => unsub(); // ✅ Cleanup correcto
+      return () => unsub();
     }
   }, [user, isSubscribed]);
 
@@ -90,7 +88,6 @@ function App() {
         <CreditCard className="mx-auto text-amber-400 mb-4" size={48} />
         <h2 className="text-xl font-bold mb-2 uppercase">Suscripción Requerida</h2>
         <p className="text-slate-400 mb-8 text-sm">Su cuenta no tiene una suscripción activa.</p>
-        {/* ✅ Aquí debes conectar tu Stripe Checkout Session */}
         <button
           onClick={() => window.location.href = 'https://buy.stripe.com/TU_LINK_AQUI'}
           className="w-full bg-cyan-600 text-white p-4 rounded-2xl font-black uppercase hover:bg-cyan-500 mb-4"
@@ -176,8 +173,6 @@ function App() {
       {/* CONTENIDO */}
       <main className="flex-1 overflow-y-auto p-12">
         <div className="max-w-4xl mx-auto">
-
-          {/* ✅ Banner de error global */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium flex justify-between items-center">
               {error}
@@ -234,4 +229,42 @@ function App() {
                       ))}
                     </div>
                   ))}
-                  <button onClick={handleGenerateACR} disa
+                  <button onClick={handleGenerateACR} disabled={loading} className="w-full bg-cyan-600 text-white p-5 rounded-xl font-black uppercase tracking-widest hover:bg-cyan-500 transition-all">
+                    {loading ? "Generando Dictamen..." : "Finalizar y Generar ACR"}
+                  </button>
+                </div>
+              )}
+
+              {reporte && (
+                <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-500">
+                  <h2 className="text-2xl font-black uppercase mb-6 text-emerald-600">Dictamen Final</h2>
+                  <p className="whitespace-pre-wrap text-slate-700 font-medium leading-relaxed">{reporte.hipotesis}</p>
+                  <button onClick={() => { setTabActiva('inicio'); setReporte(null); setCategorias([]); }} className="mt-8 w-full bg-slate-900 text-white p-4 rounded-xl font-bold uppercase">Volver al Monitor</button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tabActiva === 'bitacora' && (
+            <div className="space-y-6">
+              <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter mb-8">Historial</h2>
+              {incidencias.map((item) => (
+                <div key={item.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center">
+                  <div>
+                    <h3 className="font-black text-lg text-slate-800">{item.titulo}</h3>
+                    <p className="text-slate-500 text-sm">{item.descripcion}</p>
+                  </div>
+                  <span className={`px-4 py-1 rounded-full text-xs font-black uppercase ${item.estado === 'resuelto' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {item.estado}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default App;
