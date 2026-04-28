@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Zap, History, Clock, CheckCircle2, AlertCircle, ShieldAlert, CreditCard } from 'lucide-center';
+import { LayoutDashboard, Zap, History, Clock, CheckCircle2, AlertCircle, ShieldAlert, CreditCard } from 'lucide-react';
 import { collection, query, onSnapshot, addDoc, orderBy, serverTimestamp, where } from "firebase/firestore";
 import { db, auth } from './firebase';
 import AuthCorner from './AuthCorner';
