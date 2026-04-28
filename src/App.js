@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Activity, ClipboardCheck, Info, AlertTriangle, 
   CheckCircle2, ChevronRight, Zap, History, LayoutDashboard, 
-  Search, ArrowLeft, ThumbsUp, ThumbsDown, Database
+  Search, ArrowLeft, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import { 
   collection, query, where, onSnapshot, addDoc, 
@@ -40,6 +40,14 @@ function App() {
     }
   }, [user]);
 
+  // FUNCIÓN CRÍTICA: Evita el error #130 asegurando que siempre devolvemos texto
+  const renderText = (val) => {
+    if (!val) return "No disponible";
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object') return val.hipotesis || JSON.stringify(val).substring(0, 50);
+    return String(val);
+  };
+
   const mostrarAviso = (texto) => {
     setAviso(texto);
     setTimeout(() => setAviso(null), 5000);
@@ -48,22 +56,11 @@ function App() {
   const handleGenerateEntrevista = async () => {
     if (!sintomas || !contexto) return alert("Faltan datos");
     setLoading(true); setCategorias([]); setReporte(null); setAntecedenteEncontrado(null);
-    
-    const norm = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const pals = norm(sintomas).split(/\s+/).filter(p => p.length > 4);
-    const coinc = incidencias.find(i => i.estado === 'resuelto' && pals.some(p => norm(`${i.titulo} ${i.descripcion}`).includes(p)));
-    
-    let promptFinal = `CONTEXTO: ${contexto}. SÍNTOMA: ${sintomas}.`;
-    if (coinc) {
-      setAntecedenteEncontrado(coinc);
-      promptFinal = `ANTECEDENTE: El caso se resolvió antes con "${coinc.solucion_final}". ${promptFinal}`;
-    }
-
     try {
       const res = await fetch('https://sixmprueba.onrender.com/api/diagnostico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptFinal })
+        body: JSON.stringify({ prompt: `CONTEXTO: ${contexto}. SÍNTOMA: ${sintomas}.` })
       });
       const d = await res.json();
       if (d.categorias) setCategorias(d.categorias);
@@ -79,14 +76,12 @@ function App() {
         body: JSON.stringify({ prompt: `SÍNTOMA: ${sintomas}. RESPUESTAS: ${JSON.stringify(respuestas)}` })
       });
       const data = await res.json();
-      if (data.error) throw new Error();
-      
       setReporte(data);
       if (user) {
         await addDoc(collection(db, "customers", user.uid, "incidencias"), {
           titulo: `Evento en ${contexto}`,
           descripcion: sintomas,
-          solucion: data.hipotesis,
+          solucion: data.hipotesis || "Sin hipótesis",
           estado: "pendiente",
           fecha: serverTimestamp()
         });
@@ -94,10 +89,10 @@ function App() {
     } catch (e) { alert("Error al generar reporte"); } finally { setLoading(false); }
   };
 
-  const enviarFeedback = async (id, fueExitosa, solucionIA) => {
+  const enviarFeedback = async (id, fueExitosa, solucionActual) => {
     try {
       const docRef = doc(db, "customers", user.uid, "incidencias", id);
-      let final = fueExitosa ? solucionIA : prompt("Solución real:");
+      let final = fueExitosa ? renderText(solucionActual) : prompt("Solución real:");
       if (!final) return;
       await updateDoc(docRef, {
         estado: "resuelto",
@@ -140,27 +135,21 @@ function App() {
               {!categorias.length && !reporte && (
                 <section className="bg-white p-12 rounded-[3.5rem] shadow-xl space-y-6">
                   <h2 className="text-3xl font-black italic uppercase text-center">Diagnóstico IA</h2>
-                  <input className="w-full p-5 bg-slate-50 rounded-3xl outline-none ring-1 ring-slate-200" value={contexto} onChange={(e)=>setContexto(e.target.value)} placeholder="Ubicación..." />
-                  <textarea className="w-full p-5 bg-slate-50 rounded-3xl outline-none ring-1 ring-slate-200 h-40" value={sintomas} onChange={(e)=>setSintomas(e.target.value)} placeholder="Síntomas..." />
+                  <input className="w-full p-5 bg-slate-50 rounded-3xl border-none ring-1 ring-slate-200 outline-none" value={contexto} onChange={(e)=>setContexto(e.target.value)} placeholder="Ubicación..." />
+                  <textarea className="w-full p-5 bg-slate-50 rounded-3xl border-none ring-1 ring-slate-200 outline-none h-40" value={sintomas} onChange={(e)=>setSintomas(e.target.value)} placeholder="Síntomas..." />
                   <button onClick={handleGenerateEntrevista} disabled={loading} className="w-full bg-slate-900 text-white p-6 rounded-[2rem] font-black">{loading ? "PROCESANDO..." : "INICIAR"}</button>
                 </section>
               )}
 
               {categorias.length > 0 && !reporte && (
                 <div className="space-y-8 pb-20">
-                  {antecedenteEncontrado && (
-                    <div className="bg-blue-600 text-white p-8 rounded-[3rem] shadow-lg">
-                      <p className="text-[10px] font-black uppercase mb-2">Antecedente detectado</p>
-                      <p className="text-lg font-bold">"{antecedenteEncontrado.solucion_final}"</p>
-                    </div>
-                  )}
                   {categorias.map((cat, idx) => (
                     <div key={idx} className="space-y-4">
                       <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest">{cat.nombre}</h4>
                       {cat.preguntas.map((pre, pIdx) => (
                         <div key={pIdx} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                           <p className="font-bold mb-4">{pre.texto}</p>
-                          <input onChange={(e) => setRespuestas({...respuestas, [`${cat.nombre}-${pIdx}`]: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl outline-none ring-1 ring-slate-200" placeholder="Respuesta..." />
+                          <input onChange={(e) => setRespuestas({...respuestas, [`${cat.nombre}-${pIdx}`]: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 outline-none" placeholder="Respuesta..." />
                         </div>
                       ))}
                     </div>
@@ -172,8 +161,8 @@ function App() {
               {reporte && (
                 <div className="bg-slate-900 text-white p-12 rounded-[4rem] space-y-6">
                   <h2 className="text-3xl font-black italic">Hipótesis Causa Raíz</h2>
-                  <p className="text-2xl text-blue-400 italic">"{reporte.hipotesis}"</p>
-                  <button onClick={() => {setReporte(null); setCategorias([]); setSintomas(''); setContexto('');}} className="text-slate-400 underline">Nueva Auditoría</button>
+                  <p className="text-2xl text-blue-400 italic">"{renderText(reporte.hipotesis)}"</p>
+                  <button onClick={() => {setReporte(null); setCategorias([]); setSintomas(''); setContexto('');}} className="text-slate-400 underline uppercase font-black text-xs">Nueva Auditoría</button>
                 </div>
               )}
             </div>
@@ -183,20 +172,20 @@ function App() {
             <div className="space-y-8 pb-20">
               <div className="flex justify-between items-center">
                 <h2 className="text-4xl font-black italic uppercase">Bitácora</h2>
-                <input type="text" placeholder="Buscar..." value={busqueda} onChange={(e)=>setBusqueda(e.target.value)} className="p-3 bg-white rounded-2xl border border-slate-200 text-sm" />
+                <input type="text" placeholder="Buscar..." value={busqueda} onChange={(e)=>setBusqueda(e.target.value)} className="p-3 bg-white rounded-2xl border border-slate-200 text-sm outline-none shadow-sm" />
               </div>
               <div className="grid gap-6">
-                {incidencias.filter(i => i.titulo?.toLowerCase().includes(busqueda.toLowerCase())).map((item) => (
+                {incidencias.filter(i => (i.titulo || '').toLowerCase().includes(busqueda.toLowerCase())).map((item) => (
                   <div key={item.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-4">
                     <div className="flex justify-between items-center">
                       <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase ${item.estado === 'resuelto' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{item.estado}</span>
                       <span className="text-[10px] font-bold text-slate-300">{item.fecha?.toDate()?.toLocaleDateString()}</span>
                     </div>
                     <h4 className="text-xl font-black italic uppercase tracking-tighter">{item.titulo}</h4>
-                    <p className="text-slate-500 text-sm italic">Sintoma: {item.descripcion}</p>
+                    <p className="text-slate-500 text-sm italic">Sintoma: {renderText(item.descripcion)}</p>
                     <div className="bg-blue-50 p-6 rounded-2xl">
-                      <p className="text-[10px] font-black text-blue-600 uppercase mb-1">IA Predice:</p>
-                      <p className="font-bold italic">"{item.solucion}"</p>
+                      <p className="text-[10px] font-black text-blue-600 uppercase mb-1 italic">IA Predice:</p>
+                      <p className="font-bold italic">"{renderText(item.solucion)}"</p>
                     </div>
                     {item.estado !== 'resuelto' ? (
                       <div className="flex gap-3">
@@ -205,8 +194,8 @@ function App() {
                       </div>
                     ) : (
                       <div className="bg-slate-900 text-white p-6 rounded-2xl font-bold italic">
-                        <p className="text-[10px] text-blue-400 mb-1">Solución Real Aplicada:</p>
-                        "{item.solucion_final}"
+                        <p className="text-[10px] text-blue-400 mb-1 uppercase tracking-widest">Solución Real Validada:</p>
+                        "{renderText(item.solucion_final)}"
                       </div>
                     )}
                   </div>
