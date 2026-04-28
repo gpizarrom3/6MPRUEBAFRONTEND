@@ -42,8 +42,6 @@ function App() {
       });
       
       const d = await res.json();
-      
-      // Mapeo flexible para asegurar que las preguntas se muestren
       const lista = d.categorias || d.categories || Object.values(d).find(v => Array.isArray(v)) || [];
       
       if (lista.length > 0) {
@@ -164,4 +162,5 @@ function App() {
   );
 }
 
+// ESTA LÍNEA ES LA QUE FALTABA Y CAUSABA EL ERROR EN VERCEL
 export default App;
