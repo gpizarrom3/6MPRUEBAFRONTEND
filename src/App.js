@@ -57,7 +57,7 @@ function App() {
       });
       const d = await res.json();
       if (d.categorias) setCategorias(d.categorias);
-    } catch (e) { alert("Error de conexión."); } finally { setLoading(false); }
+    } catch (e) { alert("Error de conexión con el motor de IA."); } finally { setLoading(false); }
   };
 
   const handleGenerateACR = async () => {
@@ -76,7 +76,7 @@ function App() {
           estado: "pendiente", fecha: serverTimestamp()
         });
       }
-    } catch (e) { alert("Error al generar reporte."); } finally { setLoading(false); }
+    } catch (e) { alert("Error al procesar el dictamen final."); } finally { setLoading(false); }
   };
 
   return (
@@ -94,10 +94,9 @@ function App() {
       <main className="flex-1 overflow-y-auto p-12">
         <div className="max-w-4xl mx-auto">
           
-          {/* SECCIÓN MONITOR */}
           {tabActiva === 'inicio' && (
             <div className="space-y-8">
-              <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Estado de Planta</h2>
+              <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Monitor de Planta</h2>
               <div className="grid grid-cols-3 gap-6">
                 <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
                   <Clock className="text-cyan-500 mb-4" size={32} />
@@ -118,12 +117,11 @@ function App() {
             </div>
           )}
 
-          {/* SECCIÓN AUDITORÍA (NUEVA) */}
           {tabActiva === 'nueva' && (
             <div className="space-y-8">
               {!categorias.length && !reporte && (
                 <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
-                  <h2 className="text-2xl font-black uppercase italic">Nuevo Expediente</h2>
+                  <h2 className="text-2xl font-black uppercase italic">Nuevo Análisis Técnico</h2>
                   <input className="w-full p-4 bg-slate-50 rounded-xl border-none ring-1 ring-slate-200" value={contexto} onChange={(e)=>setContexto(e.target.value)} placeholder="TAG del Activo" />
                   <textarea className="w-full p-4 bg-slate-50 rounded-xl border-none ring-1 ring-slate-200 h-32" value={sintomas} onChange={(e)=>setSintomas(e.target.value)} placeholder="Describa la falla..." />
                   <button onClick={handleGenerateEntrevista} disabled={loading} className="w-full bg-slate-900 text-white p-5 rounded-xl font-black uppercase tracking-widest hover:bg-cyan-600 transition-all">{loading ? "Analizando..." : "Iniciar Protocolo 6M"}</button>
@@ -134,11 +132,11 @@ function App() {
                 <div className="space-y-6">
                   {antecedenteEncontrado && (
                     <div className="bg-[#0F172A] text-white p-8 rounded-3xl border-l-8 border-cyan-500 shadow-xl">
-                      <div className="flex items-center gap-2 mb-4 text-cyan-400 font-bold text-xs uppercase"><Database size={16}/> {antecedenteEncontrado.length} Casos Similares Encontrados</div>
+                      <div className="flex items-center gap-2 mb-4 text-cyan-400 font-bold text-xs uppercase"><Database size={16}/> Casos Similares en Base de Datos</div>
                       {antecedenteEncontrado.map((c, i) => (
                         <div key={i} className="mb-4 last:mb-0 border-b border-white/5 pb-4 last:border-0">
                           <p className="text-slate-400 text-xs italic mb-1">"{renderText(c.descripcion)}"</p>
-                          <p className="text-cyan-500 font-bold text-sm">Solución: {renderText(c.solucion)}</p>
+                          <p className="text-cyan-500 font-bold text-sm">Causa Raíz: {renderText(c.solucion)}</p>
                         </div>
                       ))}
                     </div>
@@ -149,7 +147,7 @@ function App() {
                       {cat.preguntas.map((pre, pIdx) => (
                         <div key={pIdx} className="mb-4 last:mb-0">
                           <p className="font-bold text-slate-700 mb-2">{pre.texto}</p>
-                          <input onChange={(e) => setRespuestas({...respuestas, [`${cat.nombre}-${pIdx}`]: e.target.value})} className="w-full p-3 bg-slate-50 rounded-lg border-none ring-1 ring-slate-200" placeholder="Respuesta..." />
+                          <input onChange={(e) => setRespuestas({...respuestas, [`${cat.nombre}-${pIdx}`]: e.target.value})} className="w-full p-3 bg-slate-50 rounded-lg border-none ring-1 ring-slate-200" placeholder="Escriba su hallazgo..." />
                         </div>
                       ))}
                     </div>
@@ -160,7 +158,7 @@ function App() {
 
               {reporte && (
                 <div className="bg-[#0F172A] text-white p-12 rounded-[3rem] shadow-2xl animate-in zoom-in-95">
-                  <h3 className="text-cyan-500 font-black text-xs uppercase tracking-[0.3em] mb-4">Dictamen de Causa Raíz</h3>
+                  <h3 className="text-cyan-500 font-black text-xs uppercase tracking-[0.3em] mb-4">Dictamen Final</h3>
                   <p className="text-3xl font-black italic border-l-4 border-cyan-500 pl-6 mb-8">"{renderText(reporte.hipotesis)}"</p>
                   <button onClick={() => {setReporte(null); setCategorias([]); setSintomas(''); setContexto('');}} className="text-slate-400 text-xs font-bold uppercase hover:text-white underline">Nueva Auditoría</button>
                 </div>
@@ -168,17 +166,16 @@ function App() {
             </div>
           )}
 
-          {/* SECCIÓN HISTORIAL */}
           {tabActiva === 'bitacora' && (
             <div className="space-y-8">
-              <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Historial Técnico</h2>
+              <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Historial de Auditorías</h2>
               <div className="grid gap-4">
                 {incidencias.map((i) => (
                   <div key={i.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-cyan-200 transition-all">
                     <div>
                       <h4 className="font-black text-slate-800 uppercase">{i.titulo}</h4>
                       <p className="text-slate-500 text-sm">{renderText(i.descripcion)}</p>
-                      <p className="text-cyan-600 text-xs font-bold mt-2">Causa: {renderText(i.solucion)}</p>
+                      <p className="text-cyan-600 text-xs font-bold mt-2">Diagnóstico: {renderText(i.solucion)}</p>
                     </div>
                     <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase ${i.estado === 'resuelto' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
                       {i.estado}
