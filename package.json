@@ -1,30 +1,19 @@
 {
-  "name": "auditoria-6m-frontend",
-  "version": "1.0.0",
+  "name": "frontend-6m-saas",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "firebase": "^10.11.0",
+    "lucide-react": "^0.378.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
-    "lucide-react": "^0.284.0",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^1.14.0",
-    "firebase": "^10.8.0" 
+    "tailwindcss": "^3.4.3"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
   }
 }
