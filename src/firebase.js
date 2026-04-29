@@ -4,7 +4,7 @@ import { getFirestore, collection, addDoc, serverTimestamp } from "firebase/fire
 
 // --- TUS NUEVAS LLAVES PERSONALES ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDQwszrwEyZkGgh3Ym2yEKYgbgk0kGTn5E",
+  apiKey: "AIzaSyDqj3mSagZg6OJ_4OpZCAWPQ2k-SjZ4UeA",
   authDomain: "auditoria-6m-pro.firebaseapp.com",
   projectId: "auditoria-6m-pro",
   storageBucket: "auditoria-6m-pro.firebasestorage.app",
