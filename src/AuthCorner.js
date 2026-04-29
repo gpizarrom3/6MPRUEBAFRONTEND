@@ -1,38 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { auth, loginConGoogle, cerrarSesion } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { LogIn, LogOut } from 'lucide-react';
+import React from 'react';
 
-const AuthCorner = () => {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
+const AuthCorner = ({ user }) => {
+  if (!user) return null;
 
   return (
-// En AuthCorner.js, cambia la línea 15 por esta:
-<div className="fixed top-6 right-6 z-[100]">
-      {user ? (
-        <div className="flex items-center gap-3 bg-white p-2 rounded-full shadow-md border">
-          <img src={user.photoURL} alt="pfp" className="w-8 h-8 rounded-full" />
-          <span className="text-sm font-medium hidden md:block">{user.displayName}</span>
-          <button onClick={cerrarSesion} className="p-2 hover:bg-gray-100 rounded-full text-red-500">
-            <LogOut size={18} />
-          </button>
-        </div>
-      ) : (
-        <button 
-          onClick={loginConGoogle}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 shadow-lg transition-all"
-        >
-          <LogIn size={18} />
-          <span>Ingresar</span>
-        </button>
-      )}
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-500">
+      <div className="text-right hidden sm:block">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Operador Senior</p>
+        <p className="text-sm font-bold text-slate-800">{user.displayName}</p>
+      </div>
+      <img 
+        src={user.photoURL} 
+        alt="Perfil" 
+        className="w-10 h-10 rounded-xl border-2 border-blue-500 shadow-sm"
+      />
     </div>
   );
 };
