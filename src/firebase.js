@@ -12,11 +12,7 @@ const firebaseConfig = {
   measurementId: "G-7D0FPPE849"
 };
 
-// Inicialización de los servicios de auditoría
 const app = initializeApp(firebaseConfig);
-
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
-
-export default app;
