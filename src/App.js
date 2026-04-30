@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, ClipboardList, History, BarChart3, 
-  LogOut, CheckCircle2, Clock, AlertCircle, PlusCircle, Zap, ShieldCheck
+  LogOut, CheckCircle2, Clock, AlertCircle, PlusCircle, Zap, ShieldCheck, MessageSquare
 } from 'lucide-react';
 import { auth, db, googleProvider } from './firebase';
 import { signInWithPopup, signOut } from 'firebase/auth';
@@ -23,7 +23,6 @@ function App() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [resolucionManual, setResolucionManual] = useState('');
 
-  // 1. GESTIÓN DE AUTENTICACIÓN Y DATOS
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(u => {
       setUser(u);
@@ -41,9 +40,8 @@ function App() {
 
   const handleLogin = () => signInWithPopup(auth, googleProvider);
   
-  // 2. LÓGICA DE AUDITORÍA IA
   const iniciarAuditoria = async () => {
-    if (!contexto || !sintomas) return alert("Por favor completa el contexto y síntoma.");
+    if (!contexto || !sintomas) return alert("Por favor completa los campos iniciales.");
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/diagnostico`, {
@@ -52,11 +50,8 @@ function App() {
         body: JSON.stringify({ tipo: "PREGUNTAS", datos: { contexto, sintomas } })
       });
       const data = await res.json();
-      if(data.categorias) { 
-        setCategorias(data.categorias); 
-        setView('audit'); 
-      }
-    } catch (e) { alert("Error al conectar con la IA de Render."); }
+      if(data.categorias) { setCategorias(data.categorias); setView('audit'); }
+    } catch (e) { alert("Error de conexión."); }
     setLoading(false);
   };
 
@@ -70,7 +65,6 @@ function App() {
       });
       const data = await res.json();
       setReporteFinal(data);
-      
       await addDoc(collection(db, "casos"), {
         userId: user.uid,
         userName: user.displayName,
@@ -82,213 +76,232 @@ function App() {
         resolucion: ''
       });
       setView('report');
-    } catch (e) { alert("Error al generar reporte técnico."); }
+    } catch (e) { alert("Error al generar reporte."); }
     setLoading(false);
   };
 
   const resolverCaso = async (id, modo) => {
     const textoRes = modo === 'ia' ? 'Siguió recomendaciones de la IA' : resolucionManual;
-    if (!textoRes) return alert("Escribe cómo se solucionó.");
     await updateDoc(doc(db, "casos", id), { status: 'solucionado', resolucion: textoRes });
     setResolucionManual('');
   };
 
-  // 3. RENDERIZADO DE ACCESO (LOGIN Y SUSCRIPCIÓN)
+  // VISTA DE ACCESO (DARK THEME)
   if (!user) return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-white text-center">
-      <div className="max-w-md space-y-8">
-        <div className="bg-blue-600 w-20 h-20 rounded-3xl mx-auto flex items-center justify-center shadow-2xl"><Zap size={40} /></div>
-        <h1 className="text-4xl font-black italic uppercase tracking-tighter">DIMECA 6M AI</h1>
-        <p className="text-slate-400">Análisis de Causa Raíz Asistido por Inteligencia Artificial.</p>
-        <button onClick={handleLogin} className="w-full bg-white text-slate-900 p-4 rounded-2xl font-black hover:scale-105 transition-all">Ingresar con Google</button>
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-white">
+      <div className="max-w-md w-full space-y-12 text-center">
+        <div className="relative inline-block">
+          <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-20 animate-pulse"></div>
+          <div className="relative bg-slate-900 border border-slate-800 w-24 h-24 rounded-[2rem] mx-auto flex items-center justify-center shadow-2xl">
+            <Zap size={48} className="text-indigo-400" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <h1 className="text-5xl font-black italic tracking-tighter bg-gradient-to-r from-white via-indigo-200 to-slate-500 bg-clip-text text-transparent uppercase">Dimeca 6M</h1>
+          <p className="text-slate-400 font-medium text-sm tracking-widest uppercase">Intelligence OS v2.5</p>
+        </div>
+        <button onClick={handleLogin} className="group relative w-full bg-indigo-600 hover:bg-indigo-500 text-white p-5 rounded-2xl font-black transition-all flex items-center justify-center gap-4 overflow-hidden shadow-2xl shadow-indigo-900/20">
+          <span className="relative z-10">INGRESAR AL SISTEMA</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+        </button>
       </div>
     </div>
   );
 
   if (!isSubscribed) return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
-      <div className="max-w-sm bg-white p-10 rounded-[3rem] shadow-2xl text-center space-y-6 border border-slate-100">
-        <ShieldCheck size={60} className="mx-auto text-blue-600" />
-        <h2 className="text-3xl font-black italic uppercase text-slate-800">Plan Industrial</h2>
-        <p className="text-slate-500 font-medium leading-relaxed">Para acceder al Dashboard y la IA de Diagnóstico, activa tu licencia corporativa.</p>
-        <button onClick={() => setIsSubscribed(true)} className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-blue-200">SUSCRIBIRSE</button>
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
+      <div className="max-w-md bg-slate-900 border border-slate-800 p-12 rounded-[3rem] shadow-2xl text-center space-y-8">
+        <ShieldCheck size={70} className="mx-auto text-emerald-400" />
+        <h2 className="text-3xl font-black italic text-white uppercase">Acceso Restringido</h2>
+        <p className="text-slate-400 font-medium leading-relaxed">Detectamos una cuenta activa sin suscripción vigente. Activa el Plan Pro para habilitar los diagnósticos IA.</p>
+        <button onClick={() => setIsSubscribed(true)} className="w-full bg-emerald-600 text-white p-5 rounded-2xl font-black shadow-lg shadow-emerald-900/20 hover:bg-emerald-500 transition-all">ACTIVAR LICENCIA</button>
       </div>
     </div>
   );
 
-  // 4. INTERFAZ PRINCIPAL (DASHBOARD)
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex">
+    <div className="min-h-screen bg-[#020617] flex text-slate-200">
       <AuthCorner user={user} />
       
-      {/* SIDEBAR NAVEGACIÓN */}
-      <aside className="w-72 bg-white border-r flex flex-col p-8 space-y-8 hidden md:flex">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg"><LayoutDashboard size={20}/></div>
-          <span className="font-black text-xl tracking-tight italic uppercase text-slate-800">DIMECA 6M</span>
+      {/* SIDEBAR NEÓN */}
+      <aside className="w-72 bg-slate-950 border-r border-slate-800 flex flex-col p-8 space-y-10 hidden md:flex">
+        <div className="flex items-center gap-3 px-2">
+          <div className="bg-indigo-600 p-2 rounded-xl text-white"><LayoutDashboard size={20}/></div>
+          <span className="font-black text-xl tracking-tight italic uppercase text-white">DIMECA 6M</span>
         </div>
-        <nav className="flex-grow space-y-2">
+        <nav className="flex-grow space-y-3">
           {[
-            { id: 'dashboard', icon: LayoutDashboard, label: 'Resumen' },
-            { id: 'audit_start', icon: PlusCircle, label: 'Nueva Auditoría' },
+            { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+            { id: 'audit_start', icon: PlusCircle, label: 'Auditoría' },
             { id: 'history', icon: History, label: 'Historial' },
-            { id: 'kpis', icon: BarChart3, label: 'Métricas KPI' },
+            { id: 'kpis', icon: BarChart3, label: 'Métricas' },
           ].map(item => (
-            <button key={item.id} onClick={() => setView(item.id)} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-bold transition-all ${view === item.id ? 'bg-blue-600 text-white shadow-xl shadow-blue-100' : 'text-slate-400 hover:bg-slate-50'}`}>
+            <button key={item.id} onClick={() => setView(item.id)} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-bold transition-all border ${view === item.id ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-400 shadow-inner' : 'text-slate-500 border-transparent hover:bg-slate-900'}`}>
               <item.icon size={20} /> {item.label}
             </button>
           ))}
         </nav>
-        <button onClick={() => signOut(auth)} className="flex items-center gap-3 p-4 text-red-500 font-bold hover:bg-red-50 rounded-2xl transition-colors"><LogOut size={20} /> Salir</button>
+        <button onClick={() => signOut(auth)} className="flex items-center gap-3 p-4 text-rose-500 font-bold hover:bg-rose-500/10 rounded-2xl transition-all"><LogOut size={20} /> Desconectar</button>
       </aside>
 
-      {/* CONTENIDO DINÁMICO */}
       <main className="flex-grow p-10 overflow-y-auto">
         
-        {/* VISTA 1: DASHBOARD RESUMEN */}
+        {/* DASHBOARD MODERNO */}
         {view === 'dashboard' && (
-          <div className="space-y-10 animate-in fade-in duration-500">
-            <header>
-              <h2 className="text-4xl font-black tracking-tight text-slate-900">Bienvenido, {user.displayName.split(' ')[0]}</h2>
-              <p className="text-slate-400 font-medium italic">Gestión de activos e ingeniería de mantenimiento.</p>
+          <div className="space-y-12 animate-in fade-in duration-500">
+            <header className="space-y-2">
+              <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Status Report</h2>
+              <p className="text-slate-500 font-bold tracking-[0.2em] uppercase text-[10px]">Operador: {user.displayName}</p>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <StatCard label="Total Casos" value={casos.length} icon={ClipboardList} color="blue" />
-              <StatCard label="Solucionados" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="green" />
-              <StatCard label="En Proceso" value={casos.filter(c => c.status === 'pendiente').length} icon={Clock} color="orange" />
-            </div>
-            <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100">
-              <h3 className="text-xl font-black mb-6 flex items-center gap-2"><History className="text-blue-600" size={20}/> Auditorías Recientes</h3>
-              <div className="space-y-4">
-                {casos.slice(0, 3).map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-5 bg-slate-50 rounded-[2rem] border border-slate-100">
-                    <p className="font-bold text-slate-700">{c.sintomas}</p>
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${c.status === 'solucionado' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{c.status}</span>
-                  </div>
-                ))}
-              </div>
+              <StatCard label="Eventos Totales" value={casos.length} icon={ClipboardList} color="indigo" />
+              <StatCard label="Optimizados" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="emerald" />
+              <StatCard label="En Revisión" value={casos.filter(c => c.status === 'pendiente').length} icon={Clock} color="amber" />
             </div>
           </div>
         )}
 
-        {/* VISTA 2: INICIO AUDITORÍA */}
+        {/* REGISTRO INICIAL */}
         {view === 'audit_start' && (
-          <div className="max-w-2xl mx-auto py-20 space-y-10 animate-in zoom-in duration-500 text-center">
-            <h2 className="text-5xl font-black tracking-tighter text-slate-900 uppercase italic">Registro de Fallo</h2>
-            <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl border border-slate-100 space-y-6 text-left">
-              <input placeholder="Ubicación técnica..." className="w-full p-6 bg-slate-50 rounded-3xl outline-none font-semibold border border-transparent focus:border-blue-300" onChange={e => setContexto(e.target.value)} />
-              <textarea placeholder="Describe el ruido, olor o anomalía visual..." className="w-full p-6 bg-slate-50 rounded-3xl outline-none h-40 font-semibold border border-transparent focus:border-blue-300" onChange={e => setSintomas(e.target.value)} />
-              <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-slate-900 text-white p-6 rounded-3xl font-black text-xl hover:bg-blue-600 transition-all shadow-xl disabled:bg-slate-300">
-                {loading ? "ANALIZANDO..." : "INICIAR MÉTODO ISHIKAWA"}
+          <div className="max-w-2xl mx-auto py-20 space-y-10 animate-in zoom-in">
+            <div className="text-center space-y-2">
+              <h2 className="text-5xl font-black tracking-tighter text-white uppercase">Nuevo Diagnóstico</h2>
+              <p className="text-indigo-400 font-bold uppercase tracking-widest text-xs">Algoritmo Ishikawa v2.5</p>
+            </div>
+            <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 shadow-2xl space-y-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Ubicación de Planta</label>
+                <input placeholder="Ej: Celda de Robotizado B-12" className="w-full p-6 bg-slate-950 rounded-3xl outline-none border border-slate-800 focus:border-indigo-500 text-white font-semibold transition-all" onChange={e => setContexto(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Sintomatología Detectada</label>
+                <textarea placeholder="¿Qué anomalías visuales o acústicas reporta el equipo?" className="w-full p-6 bg-slate-950 rounded-3xl outline-none h-40 border border-slate-800 focus:border-indigo-500 text-white font-semibold transition-all" onChange={e => setSintomas(e.target.value)} />
+              </div>
+              <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-indigo-600 text-white p-6 rounded-3xl font-black text-xl hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-900/20 uppercase italic">
+                {loading ? "Calculando..." : "Desplegar 6M"}
               </button>
             </div>
           </div>
         )}
 
-        {/* VISTA 3: CUESTIONARIO SENSORIAL (CON RIESGOS) */}
+        {/* AUDITORÍA CON RESPUESTA MANUAL Y RIESGO CONDICIONAL */}
         {view === 'audit' && (
-          <div className="max-w-4xl mx-auto space-y-12 pb-20 animate-in fade-in">
-            <h2 className="text-4xl font-black text-center italic uppercase text-slate-900">Protocolo de Inspección</h2>
+          <div className="max-w-4xl mx-auto space-y-16 pb-20 animate-in fade-in">
+            <div className="text-center">
+              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">Protocolo Sensorial</h2>
+            </div>
             {categorias?.map((cat, idx) => (
-              <div key={idx} className="space-y-8">
-                <h4 className="text-blue-600 font-black uppercase text-xs bg-blue-50 px-5 py-2 rounded-full inline-block tracking-widest">{cat.nombre}</h4>
-                <div className="grid gap-8">
-                  {cat?.preguntas?.map((p, pidx) => (
-                    <div key={pidx} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden p-10 space-y-8 hover:shadow-2xl transition-all">
-                      <p className="text-2xl font-black text-slate-800 leading-tight flex gap-4 items-start"><ClipboardList className="text-blue-600 shrink-0 mt-1"/> {p.texto}</p>
-                      <div className="grid grid-cols-3 gap-4">
-                        {['SÍ', 'NO', 'SIN REGISTRO'].map(opt => (
-                          <button key={opt} onClick={() => setRespuestas({...respuestas, [`${cat.nombre}-${pidx}-val`]: opt})} className={`p-4 rounded-2xl font-black text-xs tracking-widest border-2 transition-all ${respuestas[`${cat.nombre}-${pidx}-val`] === opt ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}>{opt}</button>
-                        ))}
+              <div key={idx} className="space-y-10">
+                <h4 className="text-indigo-400 font-black uppercase text-xs tracking-[0.4em] bg-indigo-500/10 px-6 py-3 rounded-full inline-block border border-indigo-500/20">{cat.nombre}</h4>
+                <div className="grid gap-10">
+                  {cat?.preguntas?.map((p, pidx) => {
+                    const idBase = `${cat.nombre}-${pidx}`;
+                    const respondida = respuestas[`${idBase}-val`];
+
+                    return (
+                      <div key={pidx} className="bg-slate-900 rounded-[3rem] border border-slate-800 p-12 space-y-10 shadow-2xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full"></div>
+                        <p className="text-2xl font-black text-white leading-tight flex gap-5 items-start"><MessageSquare className="text-indigo-500 shrink-0 mt-1" size={28}/> {p.texto}</p>
+                        
+                        <div className="grid grid-cols-3 gap-5">
+                          {['SÍ', 'NO', 'SIN REGISTRO'].map(opt => (
+                            <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black text-[11px] tracking-[0.2em] border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg' : 'bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-600'}`}>{opt}</button>
+                          ))}
+                        </div>
+
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black uppercase text-slate-500 ml-2">Nota Manual del Operador:</label>
+                          <textarea 
+                            className="w-full p-6 bg-slate-950 rounded-[2rem] outline-none border border-slate-800 focus:border-indigo-500 text-slate-300 font-medium text-sm h-32 transition-all" 
+                            placeholder="Anota detalles técnicos observados a mano..."
+                            onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})}
+                          />
+                        </div>
+
+                        {/* RIESGO CONDICIONAL: Solo aparece si se respondió la pregunta */}
+                        {respondida && (
+                          <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-[2rem] animate-in slide-in-from-bottom-4 duration-500">
+                            <p className="text-[10px] font-black uppercase text-rose-400 flex items-center gap-2 mb-3 tracking-widest"><AlertCircle size={16}/> Riesgo Técnico Identificado:</p>
+                            <p className="text-sm text-rose-200 font-bold italic leading-relaxed">{p.riesgo}</p>
+                          </div>
+                        )}
                       </div>
-                      <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-3xl">
-                        <p className="text-[10px] font-black uppercase text-red-600 flex items-center gap-2 mb-2"><AlertCircle size={14}/> Riesgo Detectado:</p>
-                        <p className="text-xs text-red-800 font-bold italic leading-relaxed">{p.riesgo}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
-            <button onClick={finalizarAuditoria} className="w-full bg-green-600 text-white p-8 rounded-[3rem] font-black text-2xl shadow-2xl hover:scale-105 transition-all">GENERAR INFORME ACR</button>
+            <button onClick={finalizarAuditoria} className="w-full bg-emerald-600 text-white p-8 rounded-[3rem] font-black text-2xl shadow-2xl hover:bg-emerald-500 transition-all uppercase italic">Finalizar e Informar</button>
           </div>
         )}
 
-        {/* VISTA 4: REPORTE TÉCNICO PREMIUM */}
+        {/* REPORTE ACR (MIDNIGHT STYLE) */}
         {view === 'report' && reporteFinal && (
-          <div className="max-w-5xl mx-auto mb-20 animate-in zoom-in duration-700 shadow-2xl">
-            <div className="bg-[#0F172A] p-12 rounded-t-[3rem] text-white flex justify-between items-end">
-              <div><h2 className="text-4xl font-black uppercase tracking-tighter italic">Informe de Ingeniería</h2><p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.3em] mt-1">Análisis de Causa Raíz (ACR)</p></div>
-              <div className="text-right text-[10px] opacity-60 font-bold uppercase tracking-widest"><p>ID: {reporteFinal.id_informe}</p><p>FECHA: {new Date().toLocaleDateString()}</p></div>
+          <div className="max-w-5xl mx-auto mb-20 animate-in zoom-in shadow-2xl rounded-[3rem] overflow-hidden border border-slate-800">
+            <div className="bg-slate-900 p-12 text-white flex justify-between items-end border-b border-slate-800">
+              <div className="space-y-1">
+                <h2 className="text-4xl font-black uppercase tracking-tighter italic">Technical Report</h2>
+                <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.4em]">ACR - Intelligence Output</p>
+              </div>
+              <div className="text-right text-[10px] opacity-40 font-bold uppercase tracking-widest"><p>ID: {reporteFinal.id_informe}</p></div>
             </div>
-            <div className="bg-white p-16 space-y-12 border-x border-slate-100">
+            <div className="bg-slate-950 p-16 space-y-12">
               <section className="space-y-4">
-                <h3 className="text-blue-700 font-black text-xs uppercase flex gap-2 tracking-widest">I. Resumen Ejecutivo</h3>
-                <p className="text-slate-600 text-sm leading-relaxed italic border-l-4 border-slate-100 pl-6">{reporteFinal.resumen_ejecutivo}</p>
+                <h3 className="text-indigo-500 font-black text-xs uppercase flex gap-2 tracking-widest">I. Executive Summary</h3>
+                <p className="text-slate-400 text-sm leading-relaxed italic border-l-2 border-indigo-500/30 pl-8">{reporteFinal.resumen_ejecutivo}</p>
               </section>
               <section className="space-y-6">
-                <h3 className="text-blue-700 font-black text-xs uppercase flex gap-2 tracking-widest">II. Factores Ishikawa (6M)</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-indigo-500 font-black text-xs uppercase flex gap-2 tracking-widest">II. Ishikawa Factors</h3>
+                <div className="grid grid-cols-2 gap-5">
                   {Object.entries(reporteFinal.analisis_6m || {}).map(([m, d]) => (
-                    <div key={m} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-blue-50 transition-colors">
-                      <h4 className="text-blue-600 font-black text-[10px] uppercase mb-2">● {m}</h4>
-                      <p className="text-[11px] text-slate-500 font-medium leading-relaxed">{d}</p>
+                    <div key={m} className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 hover:border-indigo-500/30 transition-colors">
+                      <h4 className="text-indigo-400 font-black text-[10px] uppercase mb-3 tracking-widest">{m}</h4>
+                      <p className="text-[11px] text-slate-400 font-medium leading-relaxed">{d}</p>
                     </div>
                   ))}
                 </div>
               </section>
-              <section className="bg-blue-50 p-10 rounded-[3rem] border border-blue-100 space-y-4">
-                <h3 className="text-blue-800 font-black text-xs uppercase flex gap-2 tracking-widest">III. Hipótesis de Causa Raíz</h3>
-                <p className="text-2xl font-black text-blue-900 leading-tight">"{reporteFinal.hipotesis_raiz}"</p>
+              <section className="bg-indigo-600 p-12 rounded-[3.5rem] shadow-2xl shadow-indigo-900/20">
+                <h3 className="text-white font-black text-xs uppercase flex gap-2 tracking-widest mb-4 opacity-80">III. Root Cause Hypothesis</h3>
+                <p className="text-3xl font-black text-white leading-tight italic">"{reporteFinal.hipotesis_raiz}"</p>
               </section>
-              <div className="grid grid-cols-2 gap-12 pt-6">
-                <section className="space-y-4 font-medium">
-                  <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">IV. Conclusiones</h3>
-                  <ul className="space-y-2">{reporteFinal.conclusiones?.map((c, i) => (<li key={i} className="text-[11px] text-slate-500 flex gap-2"><span className="text-blue-500">●</span> {c}</li>))}</ul>
-                </section>
-                <section className="space-y-4 font-bold">
-                  <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">V. Plan de Acción</h3>
-                  <ul className="space-y-2">{reporteFinal.plan_accion?.map((p, i) => (<li key={i} className="text-[11px] text-slate-700 flex gap-2"><CheckCircle2 size={14} className="text-green-500 shrink-0"/> {p}</li>))}</ul>
-                </section>
-              </div>
             </div>
-            <div className="bg-slate-50 p-10 rounded-b-[3rem] flex justify-between items-center border-t border-slate-100">
-              <button onClick={() => setView('dashboard')} className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-blue-600 transition-colors">← Salir del Reporte</button>
-              <button onClick={() => window.print()} className="bg-[#0F172A] text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl">Exportar PDF</button>
+            <div className="bg-slate-900 p-10 flex justify-between items-center border-t border-slate-800">
+              <button onClick={() => setView('dashboard')} className="text-slate-500 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors">Cerrar Sesión Diagnóstica</button>
+              <button onClick={() => window.print()} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-400 hover:text-white transition-all shadow-xl">Imprimir PDF</button>
             </div>
           </div>
         )}
 
-        {/* VISTA 5: HISTORIAL DE CASOS */}
+        {/* HISTORIAL MODERNO */}
         {view === 'history' && (
-          <div className="space-y-10 animate-in fade-in duration-500">
-            <header><h2 className="text-4xl font-black tracking-tighter text-slate-900 italic uppercase">Archivo Maestro</h2></header>
+          <div className="space-y-12 animate-in fade-in duration-500">
+            <h2 className="text-5xl font-black tracking-tighter text-white italic uppercase">Master Archive</h2>
             <div className="grid gap-8">
               {casos.length === 0 ? (
-                <div className="bg-white p-20 rounded-[3rem] text-center italic text-slate-400 border border-dashed border-slate-200">No hay auditorías registradas en este entorno.</div>
+                <div className="bg-slate-900 p-20 rounded-[3rem] text-center italic text-slate-600 border border-slate-800">Archivo vacío. Inicia una auditoría para poblar la base de datos.</div>
               ) : (
                 casos.map(c => (
-                  <div key={c.id} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-8 hover:shadow-md transition-shadow">
+                  <div key={c.id} className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 shadow-xl space-y-8">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-black text-2xl text-slate-800 tracking-tight">{c.sintomas}</h4>
-                        <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">{c.contexto} — {new Date(c.fecha).toLocaleDateString()}</p>
+                      <div className="space-y-2">
+                        <h4 className="text-3xl font-black text-white tracking-tight italic">{c.sintomas}</h4>
+                        <p className="text-indigo-400 font-bold uppercase text-[10px] tracking-[0.3em]">{c.contexto} — {new Date(c.fecha).toLocaleDateString()}</p>
                       </div>
-                      <span className={`px-6 py-2 rounded-full text-xs font-black uppercase ${c.status === 'solucionado' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{c.status}</span>
+                      <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${c.status === 'solucionado' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>{c.status}</span>
                     </div>
                     {c.status === 'pendiente' ? (
-                      <div className="pt-8 border-t space-y-6">
-                        <p className="font-black text-slate-600 text-xs uppercase tracking-widest italic">Declarar Resolución del Fallo:</p>
-                        <textarea className="w-full p-6 bg-slate-50 rounded-3xl outline-none border focus:border-green-500 font-medium h-24 text-sm" placeholder="Describe brevemente la solución aplicada..." value={resolucionManual} onChange={(e) => setResolucionManual(e.target.value)} />
+                      <div className="pt-10 border-t border-slate-800 space-y-6">
+                        <textarea className="w-full p-6 bg-slate-950 rounded-3xl outline-none border border-slate-800 focus:border-emerald-500 font-medium h-32 text-slate-300 shadow-inner" placeholder="Escribe la resolución final aplicada al activo..." value={resolucionManual} onChange={(e) => setResolucionManual(e.target.value)} />
                         <div className="flex gap-4">
-                          <button onClick={() => resolverCaso(c.id, 'ia')} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-lg">Seguir IA</button>
-                          <button onClick={() => resolverCaso(c.id, 'manual')} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-700 transition-all shadow-lg text-white">Manual</button>
+                          <button onClick={() => resolverCaso(c.id, 'ia')} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all">Validar IA</button>
+                          <button onClick={() => resolverCaso(c.id, 'manual')} className="bg-slate-800 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all">Manual Fix</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="pt-8 border-t p-8 bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Solución Técnica Registrada:</p>
-                        <p className="text-lg font-bold text-slate-700 italic">"{c.resolucion}"</p>
+                      <div className="pt-10 border-t border-slate-800 p-10 bg-emerald-500/5 rounded-[3rem] border border-emerald-500/10">
+                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-4">Registro de Solución Final:</p>
+                        <p className="text-xl font-bold text-slate-200 italic leading-relaxed">"{c.resolucion}"</p>
                       </div>
                     )}
                   </div>
@@ -298,44 +311,30 @@ function App() {
           </div>
         )}
 
-        {/* VISTA 6: MÉTRICAS KPI */}
+        {/* MÉTRICAS NEÓN */}
         {view === 'kpis' && (
-          <div className="space-y-12 animate-in slide-in-from-bottom-10 duration-700">
-            <header>
-              <h2 className="text-4xl font-black tracking-tighter text-slate-900 uppercase italic">Indicadores de Gestión</h2>
-              <p className="text-slate-500 italic font-medium mt-2">Métricas de eficiencia operativa SpA.</p>
+          <div className="space-y-16 animate-in slide-in-from-bottom-10 duration-700">
+            <header className="space-y-2">
+              <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Operations Analytics</h2>
+              <p className="text-indigo-400 font-bold uppercase tracking-widest text-xs">Métricas de Rendimiento SpA</p>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="bg-white p-16 rounded-[4rem] shadow-sm border border-slate-100 text-center space-y-6 hover:scale-[1.03] transition-transform">
-                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Eficiencia en Resolución</p>
-                <p className="text-9xl font-black text-blue-600 tracking-tighter">
-                  {casos.length > 0 ? ((casos.filter(c => c.status === 'solucionado').length / casos.length) * 100).toFixed(0) : 0}<span className="text-4xl">%</span>
+              <div className="bg-slate-900 p-16 rounded-[4rem] border border-slate-800 text-center space-y-6 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Efficiency Rate</p>
+                <p className="text-[12rem] font-black text-indigo-500 leading-none tracking-tighter">
+                  {casos.length > 0 ? ((casos.filter(c => c.status === 'solucionado').length / casos.length) * 100).toFixed(0) : 0}<span className="text-4xl ml-2">%</span>
                 </p>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest italic">Impacto directo de la IA</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Resolución Global de Activos</p>
               </div>
-              <div className="bg-white p-16 rounded-[4rem] shadow-sm border border-slate-100 text-center space-y-6 hover:scale-[1.03] transition-transform">
-                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Volumen de Auditoría</p>
-                <p className="text-9xl font-black text-indigo-600 tracking-tighter">
+              <div className="bg-slate-900 p-16 rounded-[4rem] border border-slate-800 text-center space-y-6 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Audited Events</p>
+                <p className="text-[12rem] font-black text-emerald-500 leading-none tracking-tighter">
                   {casos.length}
                 </p>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest italic">Casos documentados totales</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Dataset de Diagnóstico Procesado</p>
               </div>
-            </div>
-            {/* TABLA DE KPI POR CATEGORÍA (Nivel Pro) */}
-            <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100">
-                <h3 className="font-black text-sm uppercase tracking-widest text-slate-400 mb-6">Desglose de Salud Industrial</h3>
-                <div className="space-y-4">
-                    <div className="flex justify-between text-xs font-black uppercase text-slate-800"><span>Categoría</span><span>Estado Salud</span></div>
-                    <hr/>
-                    {['Maquinaria', 'Mano de Obra', 'Medición'].map(cat => (
-                        <div key={cat} className="flex justify-between items-center py-2">
-                            <span className="font-bold text-slate-600">{cat}</span>
-                            <div className="w-48 h-3 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500 rounded-full" style={{width: '75%'}}></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
             </div>
           </div>
         )}
@@ -345,15 +344,15 @@ function App() {
   );
 }
 
-// COMPONENTE AUXILIAR DE TARJETAS
 const StatCard = ({ label, value, icon: Icon, color }) => (
-  <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 flex items-center gap-6 group hover:shadow-2xl transition-all">
-    <div className={`p-5 rounded-2xl ${color === 'blue' ? 'bg-blue-50 text-blue-600' : color === 'green' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
-      <Icon size={28} />
+  <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 flex items-center gap-8 group hover:border-indigo-500/50 transition-all shadow-2xl relative overflow-hidden">
+    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-3xl rounded-full"></div>
+    <div className={`p-6 rounded-3xl ${color === 'indigo' ? 'bg-indigo-500/10 text-indigo-400' : color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+      <Icon size={32} />
     </div>
     <div>
-      <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">{label}</p>
-      <p className="text-4xl font-black text-slate-800 tracking-tighter">{value}</p>
+      <p className="text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] mb-1">{label}</p>
+      <p className="text-5xl font-black text-white tracking-tighter">{value}</p>
     </div>
   </div>
 );
