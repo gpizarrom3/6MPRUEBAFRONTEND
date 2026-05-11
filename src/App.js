@@ -91,7 +91,7 @@ function App() {
             respuestas,
             contexto,
             sintomas,
-            instruccion: "Genera un Informe de Análisis de Causa Raíz (ACR) Profesional. Incluye: resumen_ejecutivo, analisis_6m (objeto con detalle por cada M), hipotesis_raiz, plan_accion (array) y nivel_criticidad."
+            instruccion: "Genera un Informe de Análisis de Causa Raíz (ACR) Profesional. Incluye: resumen_ejecutivo, analisis_6m (objeto con detalle por cada M), hipotesis_raiz, plan_accion (array) y nivel_criticidad, que todas las respuestas sean mas bien orientadas a un reporte preliminar. no quiero que uses palabras alarmistas como catastrofico , problema grave o similares. comportate como un senior en mecanica dando su opinion preliminar de un problema guiandote por las preguntas que se realizaron ."
           } 
         })
       });
