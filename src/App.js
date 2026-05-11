@@ -172,7 +172,7 @@ function App() {
       <aside className="w-72 bg-slate-950 border-r border-slate-800 flex flex-col p-8 space-y-10 hidden md:flex">
         <div className="flex items-center gap-3 px-2">
           <div className="bg-indigo-600 p-2 rounded-xl text-white"><LayoutDashboard size={20}/></div>
-          <span className="font-black text-xl tracking-tight italic uppercase text-white">DIMECA 6M</span>
+          <span className="font-black text-xl tracking-tight italic uppercase text-white">INNOVATTECH 6M</span>
         </div>
         <nav className="flex-grow space-y-3">
           {[
