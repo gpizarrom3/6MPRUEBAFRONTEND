@@ -24,7 +24,6 @@ function App() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [resolucionManual, setResolucionManual] = useState('');
 
-  // Iconos para las 6M (Mismo orden que el motor ACR)
   const mIcons = {
     "Mano de Obra": Users,
     "Maquinaria": Settings,
@@ -51,12 +50,10 @@ function App() {
 
   const handleLogin = () => signInWithPopup(auth, googleProvider);
   
-  // LOGICA INICIAR AUDITORIA (SIGUIENDO codigoACR (1).txt)
   const iniciarAuditoria = async () => {
     if (!contexto || !sintomas) return alert("Por favor completa los campos iniciales.");
     setLoading(true);
     try {
-      // El prompt interno de la API ahora debe solicitar 2 preguntas por cada 6M
       const res = await fetch(`${API_BASE_URL}/api/diagnostico`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -65,7 +62,9 @@ function App() {
           datos: { 
             contexto, 
             sintomas,
-            instruccion: "Genera exactamente 2 preguntas técnicas por cada una de las 6 categorías (Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente). Devuelve un JSON con 'categorias' que contengan 'nombre' y 'preguntas'."
+            instruccion: `Actúa como un Mecánico Industrial Senior con amplia trayectoria. 
+            Basado en los síntomas descritos, genera 2 preguntas técnicas por cada una de las 6M (Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente). 
+            Tu tono debe ser profesional, analítico y calmado. El objetivo es recopilar datos para un diagnóstico preliminar.`
           } 
         })
       });
@@ -78,7 +77,6 @@ function App() {
     setLoading(false);
   };
 
-  // LOGICA FINALIZAR AUDITORIA (SIGUIENDO codigoACR (1).txt)
   const finalizarAuditoria = async () => {
     setLoading(true);
     try {
@@ -91,7 +89,23 @@ function App() {
             respuestas,
             contexto,
             sintomas,
-            instruccion: "Genera un Informe de Análisis de Causa Raíz (ACR) Profesional. Incluye: resumen_ejecutivo, analisis_6m (objeto con detalle por cada M), hipotesis_raiz, plan_accion (array) y nivel_criticidad, que todas las respuestas sean mas bien orientadas a un reporte preliminar. no quiero que uses palabras alarmistas como catastrofico , problema grave o similares. comportate como un senior en mecanica dando su opinion preliminar de un problema guiandote por las preguntas que se realizaron ."
+            instruccion: `Eres un Mecánico Senior entregando un Informe Técnico Preliminar.
+            
+            REGLAS DE TONO Y CONTENIDO:
+            1. No uses lenguaje alarmista como 'catastrófico', 'grave' o 'peligro'. 
+            2. Prefiere términos profesionales: 'desviación detectada', 'hallazgo a observar', 'condición fuera de estándar' o 'comportamiento anómalo'.
+            3. La 'hipotesis_raiz' debe ser una conclusión lógica basada en los síntomas, presentada como una sugerencia técnica preliminar.
+            4. El 'plan_accion' debe guiar al cliente hacia una fase de recopilación de datos más profunda (inspecciones, monitoreos, registros históricos) que justifiquen una evaluación técnica rigurosa posterior.
+            
+            ESTRUCTURA JSON REQUERIDA:
+            {
+              "titulo": "Título profesional sobrio",
+              "resumen_ejecutivo": "Análisis técnico de la situación reportada",
+              "analisis_6m": { "Mano de Obra": "...", "Maquinaria": "...", etc },
+              "hipotesis_raiz": "Tu conclusión preliminar experta",
+              "plan_accion": ["Acción de monitoreo/inspección 1", "Acción 2", "..."],
+              "nivel_criticidad": "Bajo|Medio|Alto"
+            }`
           } 
         })
       });
@@ -114,7 +128,7 @@ function App() {
   };
 
   const resolverCaso = async (id, modo) => {
-    const textoRes = modo === 'ia' ? 'Siguió recomendaciones de la IA' : resolucionManual;
+    const textoRes = modo === 'ia' ? 'Siguió recomendaciones del informe preliminar' : resolucionManual;
     await updateDoc(doc(db, "casos", id), { status: 'solucionado', resolucion: textoRes });
     setResolucionManual('');
   };
@@ -129,11 +143,11 @@ function App() {
           </div>
         </div>
         <div className="space-y-4">
-          <h1 className="text-5xl font-black italic tracking-tighter bg-gradient-to-r from-white via-indigo-200 to-slate-500 bg-clip-text text-transparent uppercase">Análisis Causa Raíz</h1>
-          <p className="text-slate-400 font-medium text-sm tracking-widest uppercase">Intelligence OS v2.9</p>
+          <h1 className="text-5xl font-black italic tracking-tighter bg-gradient-to-r from-white via-indigo-200 to-slate-500 bg-clip-text text-transparent uppercase text-shadow-xl">Análisis Causa Raíz</h1>
+          <p className="text-slate-400 font-medium text-sm tracking-widest uppercase">Expert System v2.9</p>
         </div>
         <button onClick={handleLogin} className="group relative w-full bg-indigo-600 hover:bg-indigo-500 text-white p-5 rounded-2xl font-black transition-all flex items-center justify-center gap-4 overflow-hidden shadow-2xl shadow-indigo-900/20">
-          <span className="relative z-10">INGRESAR AL SISTEMA</span>
+          <span className="relative z-10">ACCEDER AL TERMINAL</span>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
         </button>
       </div>
@@ -144,9 +158,9 @@ function App() {
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
       <div className="max-w-md bg-slate-900 border border-slate-800 p-12 rounded-[3rem] shadow-2xl text-center space-y-8">
         <ShieldCheck size={70} className="mx-auto text-emerald-400" />
-        <h2 className="text-3xl font-black italic text-white uppercase">Acceso Restringido</h2>
-        <p className="text-slate-400 font-medium leading-relaxed">Detectamos una cuenta activa sin suscripción vigente. Activa el Plan Pro para habilitar los diagnósticos ACR con motor 6M.</p>
-        <button onClick={() => setIsSubscribed(true)} className="w-full bg-emerald-600 text-white p-5 rounded-2xl font-black shadow-lg shadow-emerald-900/20 hover:bg-emerald-500 transition-all">ACTIVAR LICENCIA</button>
+        <h2 className="text-3xl font-black italic text-white uppercase">Licencia Requerida</h2>
+        <p className="text-slate-400 font-medium leading-relaxed">Active su suscripción para habilitar los diagnósticos técnicos avanzados y el motor de reportes preliminares.</p>
+        <button onClick={() => setIsSubscribed(true)} className="w-full bg-emerald-600 text-white p-5 rounded-2xl font-black shadow-lg shadow-emerald-900/20 hover:bg-emerald-500 transition-all">ACTIVAR LICENCIA PRO</button>
       </div>
     </div>
   );
@@ -163,7 +177,7 @@ function App() {
         <nav className="flex-grow space-y-3">
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-            { id: 'audit_start', icon: PlusCircle, label: 'Auditoría ACR' },
+            { id: 'audit_start', icon: PlusCircle, label: 'Nuevo Análisis' },
             { id: 'history', icon: History, label: 'Historial' },
             { id: 'kpis', icon: BarChart3, label: 'Métricas' },
           ].map(item => (
@@ -181,12 +195,12 @@ function App() {
           <div className="space-y-12 animate-in fade-in duration-500">
             <header className="space-y-2">
               <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Status Report</h2>
-              <p className="text-slate-500 font-bold tracking-[0.2em] uppercase text-[10px]">Operador: {user.displayName}</p>
+              <p className="text-slate-500 font-bold tracking-[0.2em] uppercase text-[10px]">Analista Técnico: {user.displayName}</p>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <StatCard label="Análisis Totales" value={casos.length} icon={ClipboardList} color="indigo" />
-              <StatCard label="Causas Resueltas" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="emerald" />
-              <StatCard label="Pendientes" value={casos.filter(c => c.status === 'pendiente').length} icon={Clock} color="amber" />
+              <StatCard label="Evaluaciones Totales" value={casos.length} icon={ClipboardList} color="indigo" />
+              <StatCard label="Casos Cerrados" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="emerald" />
+              <StatCard label="En Seguimiento" value={casos.filter(c => c.status === 'pendiente').length} icon={Clock} color="amber" />
             </div>
           </div>
         )}
@@ -194,21 +208,21 @@ function App() {
         {view === 'audit_start' && (
           <div className="max-w-2xl mx-auto py-20 space-y-10 animate-in zoom-in">
             <div className="text-center space-y-2">
-              <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Análisis Causa Raíz</h2>
-              <p className="text-indigo-400 font-bold uppercase tracking-widest text-xs">Algoritmo 6M - Ishikawa v2.9</p>
+              <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Diagnóstico Preliminar</h2>
+              <p className="text-indigo-400 font-bold uppercase tracking-widest text-xs">Evaluación de Activos Industriales</p>
             </div>
             <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 shadow-2xl space-y-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Contexto de la Planta</label>
-                <input placeholder="Ej: Molino SAG 01 - Área de Rodamientos" className="w-full p-6 bg-slate-950 rounded-3xl outline-none border border-slate-800 focus:border-indigo-500 text-white font-semibold transition-all" onChange={e => setContexto(e.target.value)} />
+                <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Equipo o Área de Planta</label>
+                <input placeholder="Ej: Correa Transportadora CV-102" className="w-full p-6 bg-slate-950 rounded-3xl outline-none border border-slate-800 focus:border-indigo-500 text-white font-semibold transition-all" onChange={e => setContexto(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Síntomas y Fallas Detectadas</label>
-                <textarea placeholder="Describe vibraciones, ruidos, temperaturas o detenciones..." className="w-full p-6 bg-slate-950 rounded-3xl outline-none h-40 border border-slate-800 focus:border-indigo-500 text-white font-semibold transition-all" onChange={e => setSintomas(e.target.value)} />
+                <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Descripción de Hallazgos</label>
+                <textarea placeholder="Indique síntomas detectados (ruido, calor, vibración)..." className="w-full p-6 bg-slate-950 rounded-3xl outline-none h-40 border border-slate-800 focus:border-indigo-500 text-white font-semibold transition-all" onChange={e => setSintomas(e.target.value)} />
               </div>
               <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-indigo-600 text-white p-6 rounded-3xl font-black text-xl hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-900/20 uppercase italic flex items-center justify-center gap-3">
-                {loading ? <Loader2 className="animate-spin" /> : <Zap size={24}/>}
-                {loading ? "PROCESANDO 6M..." : "DESPLEGAR AUDITORÍA"}
+                {loading ? <Loader2 className="animate-spin" /> : <PlusCircle size={24}/>}
+                {loading ? "INICIANDO CONSULTA..." : "ABRIR FICHA TÉCNICA"}
               </button>
             </div>
           </div>
@@ -217,7 +231,7 @@ function App() {
         {view === 'audit' && (
           <div className="max-w-4xl mx-auto space-y-16 pb-20 animate-in fade-in">
             <div className="text-center">
-              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">Entrevista Técnica 6M</h2>
+              <h2 className="text-4xl font-black italic uppercase text-white tracking-tighter">Entrevista Estructurada 6M</h2>
             </div>
             {categorias?.map((cat, idx) => {
               const IconM = mIcons[cat.nombre] || MessageSquare;
@@ -241,23 +255,23 @@ function App() {
                           
                           <div className="grid grid-cols-2 gap-5">
                             {['SÍ', 'NO'].map(opt => (
-                              <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black text-[11px] tracking-[0.2em] border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? (opt === 'SÍ' ? 'bg-rose-600 border-rose-400' : 'bg-emerald-600 border-emerald-400') + ' text-white shadow-lg' : 'bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-600'}`}>{opt}</button>
+                              <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black text-[11px] tracking-[0.2em] border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg' : 'bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-600'}`}>{opt}</button>
                             ))}
                           </div>
 
                           <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase text-slate-500 ml-2">Detalles Adicionales / Observación Técnica:</label>
+                            <label className="text-[10px] font-black uppercase text-slate-500 ml-2">Observaciones técnicas de campo:</label>
                             <textarea 
                               className="w-full p-6 bg-slate-950 rounded-[2rem] outline-none border border-slate-800 focus:border-indigo-500 text-slate-300 font-medium text-sm h-32 transition-all" 
-                              placeholder="Indica mediciones, ruidos o comportamientos específicos..."
+                              placeholder="Indique detalles específicos detectados durante la inspección..."
                               onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})}
                             />
                           </div>
 
                           {respondida && (
-                            <div className="bg-indigo-500/10 border border-indigo-500/30 p-8 rounded-[2rem] animate-in slide-in-from-bottom-4 duration-500">
-                              <p className="text-[10px] font-black uppercase text-indigo-400 flex items-center gap-2 mb-3 tracking-widest"><AlertCircle size={16}/> Contexto del Factor:</p>
-                              <p className="text-sm text-slate-300 font-bold italic leading-relaxed">{p.contexto || "Este factor será analizado en el reporte final para determinar su incidencia en la causa raíz."}</p>
+                            <div className="bg-slate-800/50 border border-slate-700 p-8 rounded-[2rem] animate-in slide-in-from-bottom-4 duration-500">
+                              <p className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2 mb-3 tracking-widest"><AlertCircle size={16}/> Contexto de Análisis:</p>
+                              <p className="text-sm text-slate-400 font-bold italic leading-relaxed">{p.contexto || "Este parámetro se evaluará para determinar su influencia en la estabilidad del equipo."}</p>
                             </div>
                           )}
                         </div>
@@ -269,7 +283,7 @@ function App() {
             })}
             <button onClick={finalizarAuditoria} disabled={loading} className="w-full bg-emerald-600 text-white p-8 rounded-[3rem] font-black text-2xl shadow-2xl hover:bg-emerald-500 transition-all uppercase italic flex items-center justify-center gap-4">
               {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={28}/>}
-              {loading ? "PROCESANDO INFORME TÉCNICO..." : "GENERAR INFORME ACR"}
+              {loading ? "PROCESANDO HALLAZGOS..." : "GENERAR INFORME PRELIMINAR"}
             </button>
           </div>
         )}
@@ -278,21 +292,21 @@ function App() {
           <div className="max-w-5xl mx-auto mb-20 animate-in zoom-in shadow-2xl rounded-[3rem] overflow-hidden border border-slate-800">
             <div className="bg-slate-900 p-12 text-white flex justify-between items-end border-b border-slate-800">
               <div className="space-y-1">
-                <h2 className="text-4xl font-black uppercase tracking-tighter italic">{reporteFinal.titulo || "Informe Técnico ACR"}</h2>
-                <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.4em]">Protocolo 6M - Output Inteligente</p>
+                <h2 className="text-4xl font-black uppercase tracking-tighter italic">{reporteFinal.titulo || "Informe Técnico"}</h2>
+                <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.4em]">Análisis Preliminar de Ingeniería</p>
               </div>
-              <div className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${reporteFinal.nivel_criticidad === 'Crítico' ? 'bg-rose-600' : 'bg-indigo-600'}`}>
-                Criticidad: {reporteFinal.nivel_criticidad || "Evaluando"}
+              <div className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${reporteFinal.nivel_criticidad === 'Alto' ? 'bg-amber-600' : 'bg-indigo-600'}`}>
+                Prioridad: {reporteFinal.nivel_criticidad || "Estándar"}
               </div>
             </div>
             <div className="bg-slate-950 p-16 space-y-12">
               <section className="space-y-4">
-                <h3 className="text-indigo-500 font-black text-xs uppercase flex gap-2 tracking-widest">I. Resumen Ejecutivo</h3>
+                <h3 className="text-indigo-500 font-black text-xs uppercase flex gap-2 tracking-widest">I. Resumen de Hallazgos</h3>
                 <p className="text-slate-400 text-sm leading-relaxed italic border-l-2 border-indigo-500/30 pl-8">{reporteFinal.resumen_ejecutivo}</p>
               </section>
               
               <section className="space-y-6">
-                <h3 className="text-indigo-500 font-black text-xs uppercase flex gap-2 tracking-widest">II. Análisis de Factores (Ishikawa)</h3>
+                <h3 className="text-indigo-500 font-black text-xs uppercase flex gap-2 tracking-widest">II. Evaluación de Factores 6M</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {Object.entries(reporteFinal.analisis_6m || {}).map(([m, d]) => (
                     <div key={m} className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 hover:border-indigo-500/30 transition-colors">
@@ -303,39 +317,42 @@ function App() {
                 </div>
               </section>
 
-              <section className="bg-indigo-600 p-12 rounded-[3.5rem] shadow-2xl shadow-indigo-900/20">
-                <h3 className="text-white font-black text-xs uppercase flex gap-2 tracking-widest mb-4 opacity-80">III. Hipótesis de Causa Raíz Probable</h3>
+              <section className="bg-slate-900 p-12 rounded-[3.5rem] border border-indigo-500/30">
+                <h3 className="text-indigo-400 font-black text-xs uppercase flex gap-2 tracking-widest mb-4 opacity-80">III. Hipótesis Técnica Sugerida</h3>
                 <p className="text-3xl font-black text-white leading-tight italic">"{reporteFinal.hipotesis_raiz}"</p>
               </section>
 
               <section className="space-y-6">
-                <h3 className="text-emerald-500 font-black text-xs uppercase flex gap-2 tracking-widest">IV. Plan de Acción Recomendado</h3>
+                <h3 className="text-emerald-500 font-black text-xs uppercase flex gap-2 tracking-widest">IV. Hoja de Ruta / Próximos Pasos</h3>
                 <div className="grid gap-4">
                   {reporteFinal.plan_accion?.map((accion, i) => (
-                    <div key={i} className="flex items-center gap-5 bg-slate-900 p-6 rounded-3xl border border-slate-800">
+                    <div key={i} className="flex items-center gap-5 bg-slate-900 p-6 rounded-3xl border border-slate-800 group hover:border-emerald-500/30 transition-all">
                       <CheckCircle2 className="text-emerald-500 shrink-0" size={24}/>
                       <p className="text-sm text-slate-300 font-bold">{accion}</p>
                     </div>
                   ))}
                 </div>
               </section>
+
+              <footer className="pt-10 border-t border-slate-800">
+                 <p className="text-[10px] text-slate-500 font-bold italic">Nota: Este documento constituye un análisis preliminar basado en síntomas iniciales. Se recomienda programar un estudio de ingeniería detallado para validar estos hallazgos antes de realizar intervenciones mayores.</p>
+              </footer>
             </div>
             <div className="bg-slate-900 p-10 flex justify-between items-center border-t border-slate-800">
               <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors">
-                <ArrowLeft size={16}/> Volver al Dashboard
+                <ArrowLeft size={16}/> Dashboard
               </button>
-              <button onClick={() => window.print()} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-400 hover:text-white transition-all shadow-xl">Imprimir Reporte Técnico</button>
+              <button onClick={() => window.print()} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-400 hover:text-white transition-all shadow-xl">Imprimir Reporte</button>
             </div>
           </div>
         )}
 
-        {/* HISTORIAL Y KPIS SE MANTIENEN IGUAL */}
         {view === 'history' && (
           <div className="space-y-12 animate-in fade-in duration-500">
-            <h2 className="text-5xl font-black tracking-tighter text-white italic uppercase">Historial de Eventos</h2>
+            <h2 className="text-5xl font-black tracking-tighter text-white italic uppercase">Registro de Activos</h2>
             <div className="grid gap-8">
               {casos.length === 0 ? (
-                <div className="bg-slate-900 p-20 rounded-[3rem] text-center italic text-slate-600 border border-slate-800">No hay registros en el archivo maestro.</div>
+                <div className="bg-slate-900 p-20 rounded-[3rem] text-center italic text-slate-600 border border-slate-800">No se registran diagnósticos en el archivo.</div>
               ) : (
                 casos.map(c => (
                   <div key={c.id} className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 shadow-xl space-y-8">
@@ -348,15 +365,15 @@ function App() {
                     </div>
                     {c.status === 'pendiente' ? (
                       <div className="pt-10 border-t border-slate-800 space-y-6">
-                        <textarea className="w-full p-6 bg-slate-950 rounded-3xl outline-none border border-slate-800 focus:border-emerald-500 font-medium h-32 text-slate-300 shadow-inner" placeholder="Registra la solución final..." value={resolucionManual} onChange={(e) => setResolucionManual(e.target.value)} />
+                        <textarea className="w-full p-6 bg-slate-950 rounded-3xl outline-none border border-slate-800 focus:border-emerald-500 font-medium h-32 text-slate-300 shadow-inner" placeholder="Indique la resolución final aplicada..." value={resolucionManual} onChange={(e) => setResolucionManual(e.target.value)} />
                         <div className="flex gap-4">
-                          <button onClick={() => resolverCaso(c.id, 'ia')} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all">Validar IA</button>
-                          <button onClick={() => resolverCaso(c.id, 'manual')} className="bg-slate-800 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all">Manual Fix</button>
+                          <button onClick={() => resolverCaso(c.id, 'ia')} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all">Validar Informe</button>
+                          <button onClick={() => resolverCaso(c.id, 'manual')} className="bg-slate-800 text-white px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all">Resolución Manual</button>
                         </div>
                       </div>
                     ) : (
                       <div className="pt-10 border-t border-slate-800 p-10 bg-emerald-500/5 rounded-[3rem] border border-emerald-500/10">
-                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-4">Solución Aplicada:</p>
+                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-4">Registro de Resolución:</p>
                         <p className="text-xl font-bold text-slate-200 italic leading-relaxed">"{c.resolucion}"</p>
                       </div>
                     )}
@@ -370,18 +387,18 @@ function App() {
         {view === 'kpis' && (
           <div className="space-y-16 animate-in slide-in-from-bottom-10 duration-700">
             <header className="space-y-2">
-              <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Operations Metrics</h2>
-              <p className="text-indigo-400 font-bold uppercase tracking-widest text-xs">Rendimiento de Diagnóstico ACR</p>
+              <h2 className="text-5xl font-black tracking-tighter text-white uppercase italic">Análisis de Datos</h2>
+              <p className="text-indigo-400 font-bold uppercase tracking-widest text-xs">Métricas de Resolución Técnica</p>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="bg-slate-900 p-16 rounded-[4rem] border border-slate-800 text-center space-y-6">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Tasa de Resolución</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Tasa de Validación</p>
                 <p className="text-[12rem] font-black text-indigo-500 leading-none tracking-tighter">
                   {casos.length > 0 ? ((casos.filter(c => c.status === 'solucionado').length / casos.length) * 100).toFixed(0) : 0}<span className="text-4xl ml-2">%</span>
                 </p>
               </div>
               <div className="bg-slate-900 p-16 rounded-[4rem] border border-slate-800 text-center space-y-6">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Eventos Auditados</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Fichas Procesadas</p>
                 <p className="text-[12rem] font-black text-emerald-500 leading-none tracking-tighter">{casos.length}</p>
               </div>
             </div>
