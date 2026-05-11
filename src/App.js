@@ -310,7 +310,10 @@ function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {Object.entries(reporteFinal.analisis_6m || {}).map(([m, d]) => (
                     <div key={m} className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 hover:border-indigo-500/30 transition-colors">
-                      <h4 className="text-indigo-400 font-black text-[10px] uppercase mb-3 tracking-widest">{m}</h4>
+                      {/* CORRECCIÓN: Limpieza de nombres de variables para que no aparezcan tecnicismos */}
+                      <h4 className="text-indigo-400 font-black text-[10px] uppercase mb-3 tracking-widest">
+                        {m.replace(/_/g, ' ').replace(/analisis|resumen|factor/gi, '').trim()}
+                      </h4>
                       <p className="text-[11px] text-slate-400 font-medium leading-relaxed">{d}</p>
                     </div>
                   ))}
@@ -358,8 +361,9 @@ function App() {
                   <div key={c.id} className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 shadow-xl space-y-8">
                     <div className="flex justify-between items-start">
                       <div className="space-y-2">
-                        <h4 className="text-3xl font-black text-white tracking-tight italic">{c.sintomas}</h4>
-                        <p className="text-indigo-400 font-bold uppercase text-[10px] tracking-[0.3em]">{c.contexto} — {new Date(c.fecha).toLocaleDateString()}</p>
+                        {/* Mejora: Mostramos contexto como título y síntomas como subtítulo */}
+                        <h4 className="text-3xl font-black text-white tracking-tight italic">{c.contexto}</h4>
+                        <p className="text-indigo-400 font-bold uppercase text-[10px] tracking-[0.3em]">Síntomas: {c.sintomas} — {new Date(c.fecha).toLocaleDateString()}</p>
                       </div>
                       <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${c.status === 'solucionado' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>{c.status}</span>
                     </div>
