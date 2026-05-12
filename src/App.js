@@ -51,28 +51,30 @@ function App() {
     if (!contexto || !sintomas) return alert("Por favor completa los campos iniciales.");
     setLoading(true);
     try {
-      const promptPreguntas = `Actúa como un Especialista en RCFA (Análisis de Causa Raíz de Fallas) con la lógica del Maintenance Engineering Handbook.
+      const promptPreguntas = `Eres un mecánico senior con más de 20 años de experiencia en mantenimiento de plantas industriales. 
+Tu especialidad es el Análisis de Causa Raíz (ACR) con metodología Ishikawa y las 6M.
+
+El usuario ha reportado el siguiente caso:
+- Equipo / máquina: ${contexto}
+- Síntomas observados: ${sintomas}
+
+Tu tarea es realizar preguntas de diagnóstico para identificar la causa raíz. Sigue estas reglas sin excepción:
+
+1. RELEVANCIA ABSOLUTA: Cada pregunta debe estar directamente relacionada con "${contexto}" y "${sintomas}".
+2. ESTRUCTURA POR 6M: Formula exactamente 2 preguntas por cada una de estas categorías: Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente.
+3. ESTILO TÉCNICO: Pregunta por intervenciones recientes, estado físico, procedimientos, repuestos, entorno y calibración.
+4. FORMATO DE SALIDA: Responde ÚNICAMENTE con el siguiente JSON válido, sin texto adicional:
+
+{
+  "categorias": [
+    {
+      "nombre": "Nombre de la M",
+      "preguntas": [{"texto": "pregunta 1"}, {"texto": "pregunta 2"}]
+    }
+  ]
+}
       
-      EQUIPO A ANALIZAR: ${contexto}
-      SÍNTOMAS REPORTADOS: ${sintomas}
-
-      OBJETIVO: Generar una entrevista técnica de 2 preguntas por cada una de las 6M para recolectar EVIDENCIA FÍSICA Y OPERATIVA.
-
-      INSTRUCCIONES DE LÓGICA INDUSTRIAL:
-      1. ANALIZA EL TIPO DE ACTIVO: Si el usuario describe un equipo mecánico, eléctrico o electrónico, tus preguntas deben adaptarse a la naturaleza de ese equipo (ej: huelgos en mecánica, voltajes/señales en electrónica, protocolos en métodos).
-      2. PREGUNTAS DE OBSERVACIÓN: Haz preguntas sobre lo que el técnico puede ver, oír, oler o medir en ese momento[cite: 90].
-      3. CRITERIO TÉCNICO: Cada pregunta debe buscar un "Modo de Falla" específico (fatiga, corrosión, estrés térmico, error de configuración, etc.).
-      4. NO ASUMAS NADA: No menciones componentes que el usuario no haya sugerido, solo pregunta por la zona o función relacionada al síntoma.
-
-      RESPONDE ÚNICAMENTE CON ESTE JSON:
-      {
-        "categorias": [
-          {
-            "nombre": "Nombre de la M",
-            "preguntas": [{"texto": "pregunta técnica adaptada al equipo"}]
-          }
-        ]
-      }`;
+`;
 
       const res = await fetch(`${API_BASE_URL}/api/diagnostico`, {
         method: 'POST',
@@ -107,28 +109,39 @@ function App() {
         });
       });
 
-      const promptReporte = `Eres un Ingeniero de Confiabilidad Senior. Tu tarea es redactar un Informe de Análisis de Causa Raíz (ACR) Profesional[cite: 102].
-      
-      DATOS SUMINISTRADOS:
-      - Contexto: ${contexto}
-      - Síntomas: ${sintomas}
-      - Hallazgos de Campo: ${JSON.stringify(respuestasLegibles)}
+      const promptReporte = `Actúa como un Mecánico Senior de INNOVATTECH con más de 20 años de experiencia en mantenimiento industrial. 
+Acabas de realizar un análisis de preguntas sobre el siguiente caso:
 
-      REGLAS DE RIGOR TÉCNICO (INNOVATTECH STANDARD):
-      1. FIDELIDAD ABSOLUTA: No inventes modelos, números de serie, componentes adicionales ni datos de rendimiento (como porcentajes) que no se te hayan entregado.
-      2. LÓGICA MOBLEY: Usa los hallazgos para proponer una "Hipótesis de Causa Raíz" que sea coherente con la física y la ingeniería del equipo descrito.
-      3. TERMINOLOGÍA ACERTADA: Usa lenguaje técnico apropiado para el área (ej: cavitación si es hidráulica, interferencia si es señal, desalineamiento si es rotación)[cite: 102, 103].
-      4. DIAGNÓSTICO PRELIMINAR: El tono debe ser consultivo. No des conclusiones definitivas si la evidencia es escasa; en su lugar, sugiere las pruebas necesarias para confirmar la hipótesis[cite: 105].
+- Equipo / máquina: ${contexto}
+- Síntomas reportados: ${sintomas}
+- Hallazgos de campo (Respuestas): ${JSON.stringify(respuestasLegibles)}
 
-      RESPONDE SÓLO CON ESTE JSON:
-      {
-        "titulo": "Informe Técnico ACR: ${contexto}",
-        "resumen_ejecutivo": "Análisis de la condición operativa del activo basado en síntomas y hallazgos.",
-        "analisis_6m": { "Mano de Obra": "...", "Maquinaria": "...", "Materiales": "...", "Métodos": "...", "Medición": "...", "Medio Ambiente": "..." },
-        "hipotesis_raiz": "Conclusión lógica basada estrictamente en la evidencia física suministrada.",
-        "plan_accion": ["Recomendación técnica 1", "Recomendación técnica 2", "Recomendación técnica 3"],
-        "nivel_criticidad": "Bajo|Medio|Alto"
-      }`;
+INSTRUCCIONES CRÍTICAS:
+1. Con base EXCLUSIVAMENTE en la información proporcionada, genera el reporte solicitado. 
+2. No inventes modelos de piezas, ni supongas datos, presiones o temperaturas que no fueron entregados.
+3. Si el usuario no mencionó un componente, no lo incluyas en el análisis.
+4. Usa un tono profesional, técnico y sobrio. Evita palabras alarmistas.
+
+ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
+{
+  "titulo": "REPORTE PRELIMINAR — ANÁLISIS DE CAUSA RAÍZ (ACR)",
+  "resumen_ejecutivo": "Entrega una evaluación global de 3 a 5 oraciones sobre la situación reportada y el próximo paso recomendado.",
+  "analisis_6m": {
+    "Mano de Obra": "Describe hallazgos clave o 'Sin información suficiente'.",
+    "Maquinaria": "Describe hallazgos clave o 'Sin información suficiente'.",
+    "Materiales": "Describe hallazgos clave o 'Sin información suficiente'.",
+    "Métodos": "Describe hallazgos clave o 'Sin información suficiente'.",
+    "Medición": "Describe hallazgos clave o 'Sin información suficiente'.",
+    "Medio Ambiente": "Describe hallazgos clave o 'Sin información suficiente'."
+  },
+  "hipotesis_raiz": "Lista de 2 a 4 causas raíz probables sustentadas en los datos entregados.",
+  "plan_accion": [
+    "Inmediata: Acción correctiva urgente basada en hallazgos.",
+    "Mediano Plazo: Acción preventiva o de mejora.",
+    "Largo Plazo: Rediseño, cambio de estándar o capacitación."
+  ],
+  "nivel_criticidad": "Bajo|Medio|Alto"
+}`;
 
       const res = await fetch(`${API_BASE_URL}/api/diagnostico`, {
         method: 'POST',
