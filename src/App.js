@@ -35,7 +35,7 @@ function App() {
       if(u) cargarCasos(u.uid);
     });
     return () => unsub();
-  }, []);
+  }, [user]);
 
   const cargarCasos = (uid) => {
     const q = query(collection(db, "casos"), where("userId", "==", uid));
@@ -46,13 +46,12 @@ function App() {
 
   const handleLogin = () => signInWithPopup(auth, googleProvider);
   
-  // --- MEJORA: PROMPT DE INVESTIGACIÓN TÉCNICA (BASADO EN MANUAL MOBLEY) ---
+  // --- PROMPT DE PREGUNTAS TÉCNICAS (ESTÁNDAR INNOVATTECH) ---
   const iniciarAuditoria = async () => {
     if (!contexto || !sintomas) return alert("Por favor completa los campos iniciales.");
     setLoading(true);
     try {
-      const promptPreguntas = `Eres un mecánico senior con más de 20 años de experiencia en mantenimiento de plantas industriales. 
-Tu especialidad es el Análisis de Causa Raíz (ACR) con metodología Ishikawa y las 6M.
+      const promptPreguntas = `Eres un mecánico senior con más de 20 años de experiencia en mantenimiento de plantas industriales. Tu especialidad es el Análisis de Causa Raíz (ACR) con metodología Ishikawa y las 6M.
 
 El usuario ha reportado el siguiente caso:
 - Equipo / máquina: ${contexto}
@@ -60,21 +59,18 @@ El usuario ha reportado el siguiente caso:
 
 Tu tarea es realizar preguntas de diagnóstico para identificar la causa raíz. Sigue estas reglas sin excepción:
 
-1. RELEVANCIA ABSOLUTA: Cada pregunta debe estar directamente relacionada con "${contexto}" y "${sintomas}".
-2. ESTRUCTURA POR 6M: Formula exactamente 2 preguntas por cada una de estas categorías: Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente.
-3. ESTILO TÉCNICO: Pregunta por intervenciones recientes, estado físico, procedimientos, repuestos, entorno y calibración.
-4. FORMATO DE SALIDA: Responde ÚNICAMENTE con el siguiente JSON válido, sin texto adicional:
-
+1. RELEVANCIA ABSOLUTA: Cada pregunta debe estar directamente relacionada con "${contexto}" y "${sintomas}". Si una pregunta no tiene conexión directa con ambos, no la hagas.
+2. ESTRUCTURA POR 6M: Formula exactamente 2 preguntas por cada categoría: Mano de Obra, Maquinaria, Materiales, Métodos, Medio Ambiente, Medición.
+3. ENFOQUE MECÁNICO: Pregunta por torque, pandeo, huelgos, fatiga, potencia, alineación, calidad de materiales e historial de intervenciones.
+4. FORMATO DE SALIDA: Responde ÚNICAMENTE con este JSON:
 {
   "categorias": [
     {
       "nombre": "Nombre de la M",
-      "preguntas": [{"texto": "pregunta 1"}, {"texto": "pregunta 2"}]
+      "preguntas": [{"texto": "Pregunta técnica específica sobre ${contexto}"}]
     }
   ]
-}
-      
-`;
+}`;
 
       const res = await fetch(`${API_BASE_URL}/api/diagnostico`, {
         method: 'POST',
@@ -86,11 +82,11 @@ Tu tarea es realizar preguntas de diagnóstico para identificar la causa raíz. 
         setCategorias(data.categorias); 
         setView('audit'); 
       }
-    } catch (e) { alert("Error de conexión con el motor de IA."); }
+    } catch (e) { alert("Error al conectar con el motor de ingeniería."); }
     setLoading(false);
   };
 
-  // --- MEJORA: PROMPT DE REPORTE TÉCNICO (ESTRICTO A LOS DATOS) ---
+  // --- PROMPT DE REPORTE ACR (BASADO EN EVIDENCIA) ---
   const finalizarAuditoria = async () => {
     setLoading(true);
     try {
@@ -103,43 +99,29 @@ Tu tarea es realizar preguntas de diagnóstico para identificar la causa raíz. 
           if (valor) {
             respuestasLegibles[`${cat.nombre} - ${p.texto}`] = {
               respuesta: valor,
-              observaciones: obs || "Sin observaciones"
+              observaciones: obs || "Sin observaciones adicionales"
             };
           }
         });
       });
 
-      const promptReporte = `Actúa como un Mecánico Senior de INNOVATTECH con más de 20 años de experiencia en mantenimiento industrial. 
-Acabas de realizar un análisis de preguntas sobre el siguiente caso:
-
+      const promptReporte = `Eres un mecánico senior de INNOVATTECH con más de 20 años de experiencia. Genera un reporte basado EXCLUSIVAMENTE en:
 - Equipo / máquina: ${contexto}
 - Síntomas reportados: ${sintomas}
-- Hallazgos de campo (Respuestas): ${JSON.stringify(respuestasLegibles)}
+- Respuestas del usuario: ${JSON.stringify(respuestasLegibles)}
 
-INSTRUCCIONES CRÍTICAS:
-1. Con base EXCLUSIVAMENTE en la información proporcionada, genera el reporte solicitado. 
-2. No inventes modelos de piezas, ni supongas datos, presiones o temperaturas que no fueron entregados.
-3. Si el usuario no mencionó un componente, no lo incluyas en el análisis.
-4. Usa un tono profesional, técnico y sobrio. Evita palabras alarmistas.
+INSTRUCCIONES:
+1. No inventes ni supongas datos que no fueron entregados. No menciones componentes que el usuario no describió.
+2. Si una categoría 6M no tiene información suficiente, indícalo.
+3. La hipótesis raíz debe derivarse lógicamente de la conexión entre el síntoma y las respuestas técnicas.
 
-ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
+FORMATO DE SALIDA (JSON ÚNICAMENTE):
 {
-  "titulo": "REPORTE PRELIMINAR — ANÁLISIS DE CAUSA RAÍZ (ACR)",
-  "resumen_ejecutivo": "Entrega una evaluación global de 3 a 5 oraciones sobre la situación reportada y el próximo paso recomendado.",
-  "analisis_6m": {
-    "Mano de Obra": "Describe hallazgos clave o 'Sin información suficiente'.",
-    "Maquinaria": "Describe hallazgos clave o 'Sin información suficiente'.",
-    "Materiales": "Describe hallazgos clave o 'Sin información suficiente'.",
-    "Métodos": "Describe hallazgos clave o 'Sin información suficiente'.",
-    "Medición": "Describe hallazgos clave o 'Sin información suficiente'.",
-    "Medio Ambiente": "Describe hallazgos clave o 'Sin información suficiente'."
-  },
-  "hipotesis_raiz": "Lista de 2 a 4 causas raíz probables sustentadas en los datos entregados.",
-  "plan_accion": [
-    "Inmediata: Acción correctiva urgente basada en hallazgos.",
-    "Mediano Plazo: Acción preventiva o de mejora.",
-    "Largo Plazo: Rediseño, cambio de estándar o capacitación."
-  ],
+  "titulo": "REPORTE PRELIMINAR ACR - INNOVATTECH",
+  "resumen_ejecutivo": "Evaluación global de 3 a 5 oraciones sobre la situación.",
+  "analisis_6m": { "Mano de Obra": "...", "Maquinaria": "...", "Materiales": "...", "Métodos": "...", "Medición": "...", "Medio Ambiente": "..." },
+  "hipotesis_raiz": "Lista de causas raíz probables sustentadas en los datos.",
+  "plan_accion": ["Inmediata: ...", "Mediano Plazo: ...", "Largo Plazo: ..."],
   "nivel_criticidad": "Bajo|Medio|Alto"
 }`;
 
@@ -159,7 +141,7 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
         status: 'pendiente', fecha: new Date().toISOString(), resolucion: ''
       });
       setView('report');
-    } catch (e) { alert("Error al generar el informe técnico."); }
+    } catch (e) { alert("Error al generar el reporte de ingeniería."); }
     setLoading(false);
   };
 
@@ -169,14 +151,13 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
     setResolucionManual('');
   };
 
-  // --- INTERFAZ CLEAN WHITE ---
   if (!user) return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6 text-slate-900 text-center">
       <div className="max-w-md w-full space-y-8">
         <Zap size={60} className="text-[#A61D2E] mx-auto" />
         <h1 className="text-5xl font-black italic uppercase tracking-tighter text-[#003B4C]">INNOVATTECH</h1>
-        <p className="font-bold text-slate-400 tracking-widest uppercase text-xs">Sistema Experto de Ingeniería</p>
-        <button onClick={handleLogin} className="w-full bg-[#003B4C] text-white p-5 rounded-2xl font-black hover:bg-black transition-all shadow-xl">ACCEDER AL TERMINAL</button>
+        <p className="font-bold text-slate-400 tracking-widest uppercase text-xs">Ingeniería e Innovación</p>
+        <button onClick={handleLogin} className="w-full bg-[#003B4C] text-white p-5 rounded-2xl font-black hover:bg-black transition-all shadow-xl shadow-blue-100">ACCEDER AL TERMINAL</button>
       </div>
     </div>
   );
@@ -192,11 +173,11 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
   );
 
   return (
-    <div className="min-h-screen bg-white flex text-slate-900 font-sans">
+    <div className="min-h-screen bg-white flex text-slate-900">
       <AuthCorner user={user} />
       <aside className="w-72 bg-slate-50 border-r border-slate-200 flex flex-col p-8 space-y-10 hidden md:flex">
         <div className="flex items-center gap-3 px-2">
-          <div className="bg-[#003B4C] p-2 rounded-xl text-white shadow-sm"><LayoutDashboard size={20}/></div>
+          <div className="bg-[#003B4C] p-2 rounded-xl text-white"><LayoutDashboard size={20}/></div>
           <span className="font-black text-xl italic uppercase text-[#003B4C]">INNOVATTECH</span>
         </div>
         <nav className="flex-grow space-y-3">
@@ -215,12 +196,13 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
       </aside>
 
       <main className="flex-grow p-10 overflow-y-auto bg-white">
+        
         {view === 'dashboard' && (
           <div className="space-y-12 animate-in fade-in">
-            <h2 className="text-5xl font-black italic uppercase text-[#003B4C] tracking-tighter">Status Report</h2>
+            <h2 className="text-5xl font-black italic uppercase text-[#003B4C] tracking-tighter text-left">Status Report</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <StatCard label="Auditorías Totales" value={casos.length} icon={ClipboardList} color="blue" />
-              <StatCard label="Casos Resueltos" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="red" />
+              <StatCard label="Evaluaciones Totales" value={casos.length} icon={ClipboardList} color="blue" />
+              <StatCard label="Casos Cerrados" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="red" />
               <StatCard label="Pendientes" value={casos.filter(c => c.status === 'pendiente').length} icon={Clock} color="grey" />
             </div>
           </div>
@@ -228,18 +210,18 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
 
         {view === 'audit_start' && (
           <div className="max-w-2xl mx-auto py-20 space-y-10 animate-in zoom-in">
-            <h2 className="text-5xl font-black text-center italic uppercase text-[#003B4C]">Diagnóstico Industrial</h2>
-            <div className="bg-slate-50 p-12 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
+            <h2 className="text-5xl font-black text-center italic uppercase text-[#003B4C]">Análisis ACR</h2>
+            <div className="bg-slate-50 p-12 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8 text-left">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Equipo / Activo</label>
-                <input placeholder="Ej: Reductor de engranajes helicoidales" className="w-full p-6 bg-white rounded-3xl border border-slate-200 outline-none focus:border-[#003B4C] transition-all" onChange={e => setContexto(e.target.value)} />
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Equipo / Máquina</label>
+                <input placeholder="Ej: Tornillo de transporte helicoidal" className="w-full p-6 bg-white rounded-3xl border border-slate-200 outline-none focus:border-[#003B4C] transition-all" onChange={e => setContexto(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Falla / Síntomas</label>
-                <textarea placeholder="Describa los hallazgos observados..." className="w-full p-6 bg-white rounded-3xl border border-slate-200 h-40 outline-none focus:border-[#003B4C] transition-all" onChange={e => setSintomas(e.target.value)} />
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Síntomas Observados</label>
+                <textarea placeholder="Ej: Se está doblando muy fácilmente bajo carga..." className="w-full p-6 bg-white rounded-3xl border border-slate-200 h-40 outline-none focus:border-[#003B4C] transition-all" onChange={e => setSintomas(e.target.value)} />
               </div>
               <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-[#A61D2E] text-white p-6 rounded-3xl font-black text-xl hover:bg-black transition-all shadow-lg uppercase italic">
-                {loading ? <Loader2 className="animate-spin mx-auto" /> : "DESPLEGAR AUDITORÍA 6M"}
+                {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR PROTOCOLO 6M"}
               </button>
             </div>
           </div>
@@ -247,9 +229,9 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
 
         {view === 'audit' && (
           <div className="max-w-4xl mx-auto space-y-16 pb-20 animate-in fade-in">
-            <h2 className="text-4xl font-black text-center italic uppercase text-[#003B4C]">Inspección de Campo</h2>
+            <h2 className="text-4xl font-black text-center italic uppercase text-[#003B4C]">Auditoría de Campo</h2>
             {categorias?.map((cat, idx) => (
-              <div key={idx} className="space-y-10">
+              <div key={idx} className="space-y-10 text-left">
                 <h4 className="text-white font-black uppercase bg-[#003B4C] px-6 py-3 rounded-full inline-block shadow-sm">{cat.nombre}</h4>
                 <div className="grid gap-10">
                   {cat?.preguntas?.map((p, pidx) => {
@@ -262,7 +244,7 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
                             <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? 'bg-[#A61D2E] border-[#A61D2E] text-white shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:border-[#003B4C]'}`}>{opt}</button>
                           ))}
                         </div>
-                        <textarea className="w-full p-6 bg-white rounded-[2rem] border border-slate-200 text-slate-600 h-32 outline-none focus:border-[#003B4C]" placeholder="Notas del hallazgo..." onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})} />
+                        <textarea className="w-full p-6 bg-white rounded-[2rem] border border-slate-200 text-slate-600 h-32 outline-none focus:border-[#003B4C]" placeholder="Notas técnicas del hallazgo..." onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})} />
                       </div>
                     );
                   })}
@@ -270,17 +252,17 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
               </div>
             ))}
             <button onClick={finalizarAuditoria} disabled={loading} className="w-full bg-[#A61D2E] p-8 rounded-[3rem] font-black text-2xl text-white hover:bg-black shadow-xl uppercase italic">
-              {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR REPORTE RCFA"}
+              {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR INFORME ACR"}
             </button>
           </div>
         )}
 
         {view === 'report' && reporteFinal && (
-          <div className="max-w-5xl mx-auto mb-20 shadow-2xl rounded-[3rem] overflow-hidden border border-slate-200 bg-white animate-in zoom-in">
-            <div className="bg-[#003B4C] p-12 flex justify-between text-white border-b border-[#003B4C]">
+          <div className="max-w-5xl mx-auto mb-20 shadow-2xl rounded-[3rem] overflow-hidden border border-slate-200 bg-white animate-in zoom-in text-left">
+            <div className="bg-[#003B4C] p-12 flex justify-between text-white">
               <div>
                 <h2 className="text-4xl font-black uppercase italic tracking-tighter">{reporteFinal.titulo}</h2>
-                <p className="text-slate-300 font-bold text-[10px] uppercase tracking-widest mt-1">Análisis Causa Raíz - Estándar Mobley</p>
+                <p className="text-slate-300 font-bold text-[10px] uppercase tracking-widest mt-1">Innovattech - Análisis Técnico</p>
               </div>
               <div className={`px-6 py-2 rounded-full font-black text-[10px] uppercase h-fit shadow-md ${reporteFinal.nivel_criticidad === 'Alto' ? 'bg-[#A61D2E]' : 'bg-slate-700'}`}>
                 Prioridad: {reporteFinal.nivel_criticidad}
@@ -288,13 +270,11 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
             </div>
             <div className="p-16 space-y-12">
               <section className="space-y-4">
-                <h3 className="text-[#A61D2E] font-black text-xs uppercase tracking-widest flex items-center gap-3">
-                   <div className="w-6 h-px bg-[#A61D2E]/20"></div> I. Resumen Ejecutivo
-                </h3>
-                <p className="text-slate-600 text-sm italic border-l-2 border-[#A61D2E] pl-8 leading-relaxed">{reporteFinal.resumen_ejecutivo}</p>
+                <h3 className="text-[#A61D2E] font-black text-xs uppercase tracking-widest border-l-4 border-[#A61D2E] pl-4">I. Conclusión del Técnico</h3>
+                <p className="text-slate-600 text-sm italic leading-relaxed">{reporteFinal.resumen_ejecutivo}</p>
               </section>
               <section className="space-y-6">
-                <h3 className="text-[#003B4C] font-black text-xs uppercase tracking-widest">II. Evaluación 6M</h3>
+                <h3 className="text-[#003B4C] font-black text-xs uppercase tracking-widest">II. Hallazgos por Categoría (6M)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {Object.entries(reporteFinal.analisis_6m || {}).map(([m, d]) => (
                     <div key={m} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-200">
@@ -305,13 +285,11 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
                 </div>
               </section>
               <section className="bg-slate-50 p-12 rounded-[3.5rem] border border-[#003B4C]/20 shadow-inner">
-                <h3 className="text-[#A61D2E] font-black text-xs uppercase mb-4 opacity-80 tracking-widest">III. Hipótesis Técnica Sugerida</h3>
-                <p className="text-3xl font-black text-[#003B4C] italic leading-tight">"{reporteFinal.hipotesis_raiz}"</p>
+                <h3 className="text-[#A61D2E] font-black text-xs uppercase mb-4 opacity-80">III. Causas Raíz Probables</h3>
+                <p className="text-2xl font-black text-[#003B4C] italic leading-tight">{reporteFinal.hipotesis_raiz}</p>
               </section>
               <section className="space-y-6">
-                <h3 className="text-emerald-600 font-black text-xs uppercase tracking-widest flex items-center gap-3">
-                   <div className="w-6 h-px bg-emerald-500/20"></div> IV. Recomendaciones Técnicas
-                </h3>
+                <h3 className="text-emerald-600 font-black text-xs uppercase tracking-widest">IV. Recomendaciones de Acción</h3>
                 <div className="grid gap-4">
                   {reporteFinal.plan_accion?.map((accion, i) => (
                     <div key={i} className="flex items-center gap-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
@@ -321,11 +299,6 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
                   ))}
                 </div>
               </section>
-              <footer className="pt-10 border-t border-slate-200">
-                <p className="text-[10px] text-slate-400 font-bold italic leading-relaxed text-center uppercase tracking-widest">
-                  Innovattech SpA - Ingeniería de Planta
-                </p>
-              </footer>
             </div>
             <div className="bg-slate-50 p-10 flex justify-between border-t border-slate-200">
               <button onClick={() => setView('dashboard')} className="text-slate-400 font-black text-[10px] uppercase flex items-center gap-2 hover:text-[#003B4C] transition-all"><ArrowLeft size={16}/> Dashboard</button>
@@ -335,14 +308,14 @@ ESTRUCTURA DEL REPORTE (DEBES RESPONDER ÚNICAMENTE CON ESTE JSON):
         )}
 
         {view === 'history' && (
-          <div className="space-y-12 animate-in fade-in">
-            <h2 className="text-5xl font-black italic uppercase text-[#003B4C] tracking-tighter">Historial Técnico</h2>
+          <div className="space-y-12 animate-in fade-in text-left">
+            <h2 className="text-5xl font-black italic uppercase text-[#003B4C] tracking-tighter">Archivo Maestro</h2>
             <div className="grid gap-8">
               {casos.map(c => (
                 <div key={c.id} className="bg-white p-12 rounded-[3.5rem] border border-slate-200 flex justify-between items-center shadow-sm hover:border-[#A61D2E] transition-all group">
                   <div>
                     <h4 className="text-3xl font-black text-[#003B4C] italic group-hover:text-[#A61D2E] transition-colors">{c.contexto}</h4>
-                    <p className="text-slate-400 font-bold text-[10px] uppercase mt-1">{new Date(c.fecha).toLocaleDateString()}</p>
+                    <p className="text-slate-400 font-bold text-[10px] uppercase mt-1 tracking-widest">{new Date(c.fecha).toLocaleDateString()}</p>
                   </div>
                   <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase ${c.status === 'solucionado' ? 'text-emerald-600 bg-emerald-50' : 'text-[#A61D2E] bg-red-50'}`}>{c.status}</span>
                 </div>
@@ -360,7 +333,7 @@ const StatCard = ({ label, value, icon: Icon, color }) => (
     <div className={`p-6 rounded-3xl ${color === 'blue' ? 'bg-[#003B4C] text-white shadow-md' : color === 'red' ? 'bg-[#A61D2E] text-white shadow-md' : 'bg-slate-100 text-slate-500'}`}>
       <Icon size={32} />
     </div>
-    <div>
+    <div className="text-left">
       <p className="text-slate-400 font-black text-[10px] uppercase mb-1 tracking-widest">{label}</p>
       <p className="text-5xl font-black text-[#003B4C] tracking-tighter">{value}</p>
     </div>
