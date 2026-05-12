@@ -50,17 +50,16 @@ function App() {
     if (!contexto || !sintomas) return alert("Por favor completa los campos iniciales.");
     setLoading(true);
     try {
-      // Prompt ajustado para entrevista cualitativa [cite: 13, 90]
-      const promptPreguntas = `Eres un Ingeniero Consultor Senior. Analiza el problema y genera una entrevista técnica de 10 preguntas.
+      const promptPreguntas = `Eres un Ingeniero Consultor Senior de INNOVATTECH. Analiza el problema y genera una entrevista técnica de 10 preguntas.
 Responde ÚNICAMENTE con JSON válido. Sin texto adicional, sin markdown.
 
 CONTEXTO: ${contexto}
 SÍNTOMAS: ${sintomas}
 
 REGLAS:
-1. Solo preguntas CUALITATIVAS (ej: ¿Sientes más calor?, ¿Hay ruidos?, ¿Ves cambios?)[cite: 90].
-2. NADA de datos duros (micras, PSI, porcentajes exactos)[cite: 91].
-3. Usa las 6M: Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente[cite: 91].
+1. Solo preguntas CUALITATIVAS (ej: ¿Sientes más calor?, ¿Hay ruidos?, ¿Ves cambios?).
+2. NADA de datos duros.
+3. Usa las 6M: Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente.
 4. Genera exactamente 2 preguntas por categoría.
 
 RESPONDE CON ESTE JSON EXACTO:
@@ -90,7 +89,6 @@ RESPONDE CON ESTE JSON EXACTO:
   const finalizarAuditoria = async () => {
     setLoading(true);
     try {
-      // Limpieza de datos: Mapeamos respuestas internas a texto legible para la IA [cite: 17, 18, 19]
       const respuestasLegibles = {};
       categorias.forEach(cat => {
         cat.preguntas.forEach((p, idx) => {
@@ -106,16 +104,14 @@ RESPONDE CON ESTE JSON EXACTO:
         });
       });
 
-      // Prompt para Reporte de Mecánico Senior no alarmista [cite: 21, 22]
-      const promptReporte = `Eres un Mecánico Senior entregando un Informe Técnico Preliminar profesional.
+      const promptReporte = `Eres un Ingeniero Senior de INNOVATTECH entregando un Informe Técnico Preliminar profesional.
 
 Hallazgos de campo recogidos: ${JSON.stringify(respuestasLegibles)}
 
 REGLA CRÍTICA: 
-1. En el objeto 'analisis_6m', redacta párrafos profesionales. JAMÁS menciones códigos internos.
-2. Habla directamente de hallazgos técnicos (ej: "Se observa una desviación...").
-3. Usa lenguaje moderado. JAMÁS: catastrófico, urgente, grave, peligro.
-4. El plan_accion debe guiar a una fase de toma de datos más profunda[cite: 23].
+1. En el objeto 'analisis_6m', redacta párrafos profesionales.
+2. Usa lenguaje de ingeniería moderado (desviación detectada, hallazgo fuera de estándar). JAMÁS: catastrófico, urgente, peligro.
+3. El plan_accion debe guiar a una fase de toma de datos más profunda.
 
 RESPONDE SÓLO con este JSON:
 {
@@ -161,68 +157,70 @@ RESPONDE SÓLO con este JSON:
   };
 
   if (!user) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-white text-center">
+    <div className="min-h-screen bg-[#001D26] flex items-center justify-center p-6 text-white text-center">
       <div className="max-w-md w-full space-y-8">
-        <Zap size={60} className="text-indigo-400 mx-auto" />
-        <h1 className="text-5xl font-black italic uppercase text-white">Análisis Causa Raíz</h1>
-        <button onClick={handleLogin} className="w-full bg-indigo-600 p-5 rounded-2xl font-black hover:bg-indigo-500 transition-all">ACCEDER AL TERMINAL</button>
+        <div className="relative inline-block">
+           <Zap size={60} className="text-[#A61D2E] mx-auto animate-pulse" />
+        </div>
+        <h1 className="text-5xl font-black italic uppercase tracking-tighter">INNOVATTECH <span className="text-[#A61D2E]">6M</span></h1>
+        <button onClick={handleLogin} className="w-full bg-[#003B4C] p-5 rounded-2xl font-black hover:bg-[#002B38] transition-all border border-[#8E9297]/20 shadow-xl">ACCEDER AL TERMINAL</button>
       </div>
     </div>
   );
 
   if (!isSubscribed) return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-white text-center">
-      <div className="max-w-md bg-slate-900 border border-slate-800 p-12 rounded-[3rem] space-y-8">
-        <ShieldCheck size={70} className="mx-auto text-emerald-400" />
-        <h2 className="text-3xl font-black uppercase">Licencia Requerida</h2>
-        <button onClick={() => setIsSubscribed(true)} className="w-full bg-emerald-600 p-5 rounded-2xl font-black">ACTIVAR LICENCIA PRO</button>
+    <div className="min-h-screen bg-[#001D26] flex items-center justify-center p-6 text-white text-center">
+      <div className="max-w-md bg-[#003B4C]/20 border border-[#8E9297]/30 p-12 rounded-[3rem] space-y-8">
+        <ShieldCheck size={70} className="mx-auto text-[#A61D2E]" />
+        <h2 className="text-3xl font-black uppercase tracking-tighter">Licencia de Ingeniería Requerida</h2>
+        <button onClick={() => setIsSubscribed(true)} className="w-full bg-[#A61D2E] p-5 rounded-2xl font-black shadow-lg">ACTIVAR LICENCIA PRO</button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#020617] flex text-slate-200">
+    <div className="min-h-screen bg-[#001D26] flex text-[#8E9297]">
       <AuthCorner user={user} />
-      <aside className="w-72 bg-slate-950 border-r border-slate-800 flex flex-col p-8 space-y-10 hidden md:flex">
+      <aside className="w-72 bg-[#00151C] border-r border-[#8E9297]/10 flex flex-col p-8 space-y-10 hidden md:flex">
         <div className="flex items-center gap-3 px-2">
-          <LayoutDashboard size={20} className="text-indigo-500"/>
-          <span className="font-black text-xl italic uppercase text-white">DIMECA 6M</span>
+          <LayoutDashboard size={20} className="text-[#A61D2E]"/>
+          <span className="font-black text-xl italic uppercase text-white tracking-tighter">INNOVATTECH</span>
         </div>
         <nav className="flex-grow space-y-3">
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { id: 'audit_start', icon: PlusCircle, label: 'Nuevo Análisis' },
-            { id: 'history', icon: History, label: 'Historial' },
+            { id: 'history', icon: History, label: 'Archivo Maestro' },
             { id: 'kpis', icon: BarChart3, label: 'Métricas' },
           ].map(item => (
-            <button key={item.id} onClick={() => setView(item.id)} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-bold border transition-all ${view === item.id ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-400' : 'text-slate-500 border-transparent hover:bg-slate-900'}`}>
+            <button key={item.id} onClick={() => setView(item.id)} className={`w-full flex items-center gap-3 p-4 rounded-2xl font-bold border transition-all ${view === item.id ? 'bg-[#003B4C] border-[#8E9297]/30 text-white shadow-lg' : 'text-[#8E9297] border-transparent hover:bg-[#003B4C]/20 hover:text-white'}`}>
               <item.icon size={20} /> {item.label}
             </button>
           ))}
         </nav>
-        <button onClick={() => signOut(auth)} className="flex items-center gap-3 p-4 text-rose-500 font-bold"><LogOut size={20} /> Desconectar</button>
+        <button onClick={() => signOut(auth)} className="flex items-center gap-3 p-4 text-[#A61D2E] font-bold hover:bg-[#A61D2E]/10 rounded-2xl transition-all"><LogOut size={20} /> Desconectar</button>
       </aside>
 
       <main className="flex-grow p-10 overflow-y-auto">
         {view === 'dashboard' && (
           <div className="space-y-12 animate-in fade-in">
-            <h2 className="text-5xl font-black italic uppercase text-white">Status Report</h2>
+            <h2 className="text-5xl font-black italic uppercase text-white tracking-tighter">Status Report</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <StatCard label="Evaluaciones Totales" value={casos.length} icon={ClipboardList} color="indigo" />
-              <StatCard label="Casos Cerrados" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="emerald" />
-              <StatCard label="En Seguimiento" value={casos.filter(c => c.status === 'pendiente').length} icon={Clock} color="amber" />
+              <StatCard label="Auditorías Totales" value={casos.length} icon={ClipboardList} color="blue" />
+              <StatCard label="Casos Resueltos" value={casos.filter(c => c.status === 'solucionado').length} icon={CheckCircle2} color="red" />
+              <StatCard label="En Seguimiento" value={casos.filter(c => c.status === 'pendiente').length} icon={Clock} color="grey" />
             </div>
           </div>
         )}
 
         {view === 'audit_start' && (
           <div className="max-w-2xl mx-auto py-20 space-y-10 animate-in zoom-in">
-            <h2 className="text-5xl font-black text-center italic uppercase text-white">Diagnóstico Preliminar</h2>
-            <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 space-y-8">
-              <input placeholder="Equipo o Área (Ej: Motor Principal)" className="w-full p-6 bg-slate-950 rounded-3xl border border-slate-800 text-white outline-none focus:border-indigo-500 transition-all" onChange={e => setContexto(e.target.value)} />
-              <textarea placeholder="Síntomas (Ej: Ruido metálico en la zona B)" className="w-full p-6 bg-slate-950 rounded-3xl border border-slate-800 text-white h-40 outline-none focus:border-indigo-500 transition-all" onChange={e => setSintomas(e.target.value)} />
-              <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-indigo-600 p-6 rounded-3xl font-black text-xl text-white hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-900/20">
-                {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR PREGUNTAS"}
+            <h2 className="text-5xl font-black text-center italic uppercase text-white tracking-tighter">Diagnóstico de Ingeniería</h2>
+            <div className="bg-[#003B4C]/10 p-12 rounded-[3.5rem] border border-[#8E9297]/20 shadow-2xl space-y-8">
+              <input placeholder="Equipo o Área de Planta" className="w-full p-6 bg-[#001D26] rounded-3xl border border-[#8E9297]/20 text-white outline-none focus:border-[#A61D2E] transition-all" onChange={e => setContexto(e.target.value)} />
+              <textarea placeholder="Hallazgos y Síntomas Críticos" className="w-full p-6 bg-[#001D26] rounded-3xl border border-[#8E9297]/20 text-white h-40 outline-none focus:border-[#A61D2E] transition-all" onChange={e => setSintomas(e.target.value)} />
+              <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-[#A61D2E] p-6 rounded-3xl font-black text-xl text-white hover:bg-[#8D1826] transition-all shadow-xl">
+                {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR PROTOCOLO 6M"}
               </button>
             </div>
           </div>
@@ -230,24 +228,24 @@ RESPONDE SÓLO con este JSON:
 
         {view === 'audit' && (
           <div className="max-w-4xl mx-auto space-y-16 pb-20 animate-in fade-in">
-            <h2 className="text-4xl font-black text-center italic uppercase text-white">Auditoría 6M de Campo</h2>
+            <h2 className="text-4xl font-black text-center italic uppercase text-white">Inspección Estructurada</h2>
             {categorias?.map((cat, idx) => (
               <div key={idx} className="space-y-10">
-                <h4 className="text-indigo-400 font-black uppercase bg-indigo-500/10 px-6 py-3 rounded-full inline-block border border-indigo-500/20">{cat.nombre}</h4>
+                <h4 className="text-white font-black uppercase bg-[#003B4C] px-6 py-3 rounded-full inline-block border border-[#8E9297]/20">{cat.nombre}</h4>
                 <div className="grid gap-10">
                   {cat?.preguntas?.map((p, pidx) => {
                     const idBase = `${cat.nombre}-${pidx}`;
                     return (
-                      <div key={pidx} className="bg-slate-900 rounded-[3rem] border border-slate-800 p-12 space-y-10 shadow-2xl relative">
+                      <div key={pidx} className="bg-[#003B4C]/5 rounded-[3rem] border border-[#8E9297]/10 p-12 space-y-10 shadow-2xl relative">
                         <p className="text-2xl font-black text-white">{p.texto}</p>
                         <div className="grid grid-cols-2 gap-5">
                           {['SÍ', 'NO'].map(opt => (
-                            <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-600'}`}>{opt}</button>
+                            <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? 'bg-[#A61D2E] border-[#A61D2E] text-white shadow-lg' : 'bg-[#001D26] text-[#8E9297] border-[#8E9297]/20 hover:border-[#A61D2E]'}`}>{opt}</button>
                           ))}
                         </div>
                         <div className="space-y-2">
-                           <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Observaciones técnicas:</label>
-                           <textarea className="w-full p-6 bg-slate-950 rounded-[2rem] border border-slate-800 text-slate-300 h-32 outline-none focus:border-indigo-500 transition-all" placeholder="Escribe detalles específicos observados..." onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})} />
+                           <label className="text-[10px] font-black uppercase text-[#8E9297] ml-4 tracking-widest">Observación Técnica de Campo:</label>
+                           <textarea className="w-full p-6 bg-[#001D26] rounded-[2rem] border border-[#8E9297]/20 text-white h-32 outline-none focus:border-[#A61D2E] transition-all" placeholder="Escribe detalles específicos..." onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})} />
                         </div>
                       </div>
                     );
@@ -255,76 +253,76 @@ RESPONDE SÓLO con este JSON:
                 </div>
               </div>
             ))}
-            <button onClick={finalizarAuditoria} disabled={loading} className="w-full bg-emerald-600 p-8 rounded-[3rem] font-black text-2xl text-white hover:bg-emerald-500 transition-all shadow-xl">
-              {loading ? <Loader2 className="animate-spin mx-auto" /> : "FINALIZAR E INFORMAR"}
+            <button onClick={finalizarAuditoria} disabled={loading} className="w-full bg-[#A61D2E] p-8 rounded-[3rem] font-black text-2xl text-white hover:bg-[#8D1826] transition-all shadow-xl">
+              {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR INFORME TÉCNICO"}
             </button>
           </div>
         )}
 
         {view === 'report' && reporteFinal && (
-          <div className="max-w-5xl mx-auto mb-20 shadow-2xl rounded-[3rem] overflow-hidden border border-slate-800 animate-in zoom-in">
-            <div className="bg-slate-900 p-12 flex justify-between border-b border-slate-800">
+          <div className="max-w-5xl mx-auto mb-20 shadow-2xl rounded-[3rem] overflow-hidden border border-[#8E9297]/20 animate-in zoom-in">
+            <div className="bg-[#003B4C] p-12 flex justify-between border-b border-[#8E9297]/20">
               <div>
-                <h2 className="text-4xl font-black uppercase italic text-white">{reporteFinal.titulo}</h2>
-                <p className="text-indigo-400 font-black text-[10px] uppercase tracking-widest mt-1">Análisis Preliminar de Ingeniería</p>
+                <h2 className="text-4xl font-black uppercase italic text-white tracking-tighter">{reporteFinal.titulo}</h2>
+                <p className="text-[#8E9297] font-black text-[10px] uppercase tracking-[0.4em] mt-1">Análisis de Ingeniería Metalmecánica</p>
               </div>
-              <div className={`px-6 py-2 rounded-full font-black text-[10px] uppercase h-fit ${reporteFinal.nivel_criticidad === 'Alto' ? 'bg-rose-600 text-white shadow-lg' : 'bg-indigo-600 text-white shadow-lg'}`}>
+              <div className={`px-6 py-2 rounded-full font-black text-[10px] uppercase h-fit shadow-lg ${reporteFinal.nivel_criticidad === 'Alto' ? 'bg-[#A61D2E] text-white' : 'bg-[#001D26] text-[#8E9297]'}`}>
                 Prioridad: {reporteFinal.nivel_criticidad}
               </div>
             </div>
-            <div className="bg-slate-950 p-16 space-y-12">
+            <div className="bg-[#001D26] p-16 space-y-12">
               <section className="space-y-4">
-                <h3 className="text-indigo-500 font-black text-xs uppercase tracking-widest">I. Resumen de Hallazgos</h3>
-                <p className="text-slate-400 text-sm italic border-l-2 border-indigo-500/30 pl-8 leading-relaxed">{reporteFinal.resumen_ejecutivo}</p>
+                <h3 className="text-[#A61D2E] font-black text-xs uppercase tracking-widest">I. Análisis de Situación</h3>
+                <p className="text-[#8E9297] text-sm italic border-l-2 border-[#A61D2E] pl-8 leading-relaxed">{reporteFinal.resumen_ejecutivo}</p>
               </section>
               <section className="space-y-6">
-                <h3 className="text-indigo-500 font-black text-xs uppercase tracking-widest">II. Desglose por Factores (6M)</h3>
+                <h3 className="text-[#A61D2E] font-black text-xs uppercase tracking-widest">II. Evaluación de Factores 6M</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {Object.entries(reporteFinal.analisis_6m || {}).map(([m, d]) => (
-                    <div key={m} className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 hover:border-indigo-500/30 transition-all">
-                      <h4 className="text-indigo-400 font-black text-[10px] uppercase mb-3">{m}</h4>
-                      <p className="text-[11px] text-slate-400 font-medium leading-relaxed">{d}</p>
+                    <div key={m} className="p-8 bg-[#003B4C]/10 rounded-[2.5rem] border border-[#8E9297]/10">
+                      <h4 className="text-white font-black text-[10px] uppercase mb-3 tracking-widest">{m}</h4>
+                      <p className="text-[11px] text-[#8E9297] font-medium leading-relaxed">{d}</p>
                     </div>
                   ))}
                 </div>
               </section>
-              <section className="bg-slate-900 p-12 rounded-[3.5rem] border border-indigo-500/30 shadow-2xl">
-                <h3 className="text-indigo-400 font-black text-xs uppercase mb-4 opacity-80">III. Hipótesis Técnica Sugerida</h3>
+              <section className="bg-[#003B4C]/20 p-12 rounded-[3.5rem] border border-[#A61D2E]/30 shadow-2xl">
+                <h3 className="text-[#A61D2E] font-black text-xs uppercase mb-4 opacity-80 tracking-widest">III. Hipótesis de Ingeniería Sugerida</h3>
                 <p className="text-3xl font-black text-white italic leading-tight">"{reporteFinal.hipotesis_raiz}"</p>
               </section>
               <section className="space-y-6">
-                <h3 className="text-emerald-500 font-black text-xs uppercase tracking-widest">IV. Hoja de Ruta / Recomendaciones</h3>
+                <h3 className="text-emerald-500 font-black text-xs uppercase tracking-widest">IV. Hoja de Ruta / Próximos Pasos</h3>
                 <div className="grid gap-4">
                   {reporteFinal.plan_accion?.map((accion, i) => (
-                    <div key={i} className="flex items-center gap-5 bg-slate-900 p-6 rounded-3xl border border-slate-800 hover:border-emerald-500/30 transition-all">
+                    <div key={i} className="flex items-center gap-5 bg-[#003B4C]/5 p-6 rounded-3xl border border-[#8E9297]/10">
                       <CheckCircle2 className="text-emerald-500 shrink-0" size={24}/>
-                      <p className="text-sm text-slate-300 font-bold italic">{accion}</p>
+                      <p className="text-sm text-[#8E9297] font-bold italic">{accion}</p>
                     </div>
                   ))}
                 </div>
               </section>
-              <footer className="pt-10 border-t border-slate-800">
-                <p className="text-[10px] text-slate-600 font-bold italic leading-relaxed">Nota: Este informe constituye una evaluación técnica preliminar. Para una determinación definitiva, se sugiere un levantamiento de ingeniería avanzado.</p>
+              <footer className="pt-10 border-t border-[#8E9297]/10">
+                <p className="text-[10px] text-[#8E9297]/60 font-bold italic leading-relaxed tracking-wider text-center uppercase">Innovattech SpA - Ingeniería, Innovación y Análisis de Causa Raíz</p>
               </footer>
             </div>
-            <div className="bg-slate-900 p-10 flex justify-between border-t border-slate-800">
-              <button onClick={() => setView('dashboard')} className="text-slate-500 font-black text-[10px] uppercase flex items-center gap-2 hover:text-white transition-all"><ArrowLeft size={16}/> Dashboard</button>
-              <button onClick={() => window.print()} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-400 hover:text-white transition-all shadow-xl">Imprimir Reporte</button>
+            <div className="bg-[#001D26] p-10 flex justify-between border-t border-[#8E9297]/10">
+              <button onClick={() => setView('dashboard')} className="text-[#8E9297] font-black text-[10px] uppercase flex items-center gap-2 hover:text-white transition-all tracking-widest"><ArrowLeft size={16}/> Dashboard</button>
+              <button onClick={() => window.print()} className="bg-white text-[#001D26] px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#A61D2E] hover:text-white transition-all shadow-xl">Imprimir Reporte</button>
             </div>
           </div>
         )}
 
         {view === 'history' && (
           <div className="space-y-12 animate-in fade-in">
-            <h2 className="text-5xl font-black italic uppercase text-white tracking-tighter">Archivo Maestro de Casos</h2>
+            <h2 className="text-5xl font-black italic uppercase text-white tracking-tighter">Archivo de Ingeniería</h2>
             <div className="grid gap-8">
               {casos.map(c => (
-                <div key={c.id} className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 flex justify-between items-center shadow-xl hover:border-indigo-500/30 transition-all group">
+                <div key={c.id} className="bg-[#003B4C]/10 p-12 rounded-[3.5rem] border border-[#8E9297]/10 flex justify-between items-center shadow-xl hover:border-[#A61D2E]/30 transition-all group">
                   <div>
-                    <h4 className="text-3xl font-black text-white italic group-hover:text-indigo-400 transition-colors">{c.contexto}</h4>
-                    <p className="text-indigo-400 font-bold text-[10px] uppercase tracking-widest mt-1">{new Date(c.fecha).toLocaleDateString()}</p>
+                    <h4 className="text-3xl font-black text-white italic group-hover:text-[#A61D2E] transition-colors tracking-tighter">{c.contexto}</h4>
+                    <p className="text-[#8E9297] font-bold text-[10px] uppercase tracking-widest mt-1">{new Date(c.fecha).toLocaleDateString()}</p>
                   </div>
-                  <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase ${c.status === 'solucionado' ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border border-rose-500/20'}`}>{c.status}</span>
+                  <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${c.status === 'solucionado' ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-400/20' : 'text-[#A61D2E] bg-[#A61D2E]/10 border border-[#A61D2E]/20'}`}>{c.status}</span>
                 </div>
               ))}
             </div>
@@ -336,12 +334,12 @@ RESPONDE SÓLO con este JSON:
 }
 
 const StatCard = ({ label, value, icon: Icon, color }) => (
-  <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 flex items-center gap-8 relative overflow-hidden group hover:border-indigo-500/50 transition-all shadow-2xl">
-    <div className={`p-6 rounded-3xl ${color === 'indigo' ? 'bg-indigo-500/10 text-indigo-400' : color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+  <div className="bg-[#003B4C]/10 p-12 rounded-[3.5rem] border border-[#8E9297]/10 flex items-center gap-8 relative overflow-hidden group hover:border-[#A61D2E]/30 transition-all shadow-2xl">
+    <div className={`p-6 rounded-3xl ${color === 'blue' ? 'bg-[#003B4C] text-white' : color === 'red' ? 'bg-[#A61D2E]/20 text-[#A61D2E]' : 'bg-[#8E9297]/10 text-[#8E9297]'}`}>
       <Icon size={32} />
     </div>
     <div>
-      <p className="text-slate-500 font-black text-[10px] uppercase mb-1 tracking-[0.2em]">{label}</p>
+      <p className="text-[#8E9297] font-black text-[10px] uppercase mb-1 tracking-[0.2em]">{label}</p>
       <p className="text-5xl font-black text-white tracking-tighter">{value}</p>
     </div>
   </div>
