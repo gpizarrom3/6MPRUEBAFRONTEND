@@ -222,7 +222,7 @@ RESPONDE SOLO JSON:
                 <textarea placeholder="Ej: Se dobla bajo carga máxima..." className="w-full p-6 bg-white rounded-3xl border border-slate-200 h-40 outline-none focus:border-[#003B4C] transition-all" onChange={e => setSintomas(e.target.value)} />
               </div>
               <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-[#A61D2E] text-white p-6 rounded-3xl font-black text-xl hover:bg-black transition-all shadow-lg uppercase italic">
-                {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR PROTOCOLO 6M"}
+                {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR MOTOR DE PRUEBA"}
               </button>
             </div>
           </div>
