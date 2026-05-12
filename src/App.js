@@ -50,21 +50,24 @@ function App() {
     if (!contexto || !sintomas) return alert("Por favor completa los campos iniciales.");
     setLoading(true);
     try {
-      const promptPreguntas = `Eres un Mecánico Industrial Senior. 
+      // Prompt ajustado para entrevista cualitativa [cite: 13, 90]
+      const promptPreguntas = `Eres un Ingeniero Consultor Senior. Analiza el problema y genera una entrevista técnica de 10 preguntas.
 Responde ÚNICAMENTE con JSON válido. Sin texto adicional, sin markdown.
 
 CONTEXTO: ${contexto}
 SÍNTOMAS: ${sintomas}
 
-Genera exactamente 2 preguntas observacionales por cada una de estas 6 categorías: Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente.
-
-Las preguntas deben: describir lo que el operario ve/escucha/siente, evitar instrumentos de medición, buscar indicios físicos concretos.
+REGLAS:
+1. Solo preguntas CUALITATIVAS (ej: ¿Sientes más calor?, ¿Hay ruidos?, ¿Ves cambios?)[cite: 90].
+2. NADA de datos duros (micras, PSI, porcentajes exactos)[cite: 91].
+3. Usa las 6M: Mano de Obra, Maquinaria, Materiales, Métodos, Medición, Medio Ambiente[cite: 91].
+4. Genera exactamente 2 preguntas por categoría.
 
 RESPONDE CON ESTE JSON EXACTO:
 {
   "categorias": [
     {
-      "nombre": "Mano de Obra",
+      "nombre": "Nombre de la M",
       "preguntas": [{"texto": "pregunta 1"}, {"texto": "pregunta 2"}]
     }
   ]
@@ -87,28 +90,32 @@ RESPONDE CON ESTE JSON EXACTO:
   const finalizarAuditoria = async () => {
     setLoading(true);
     try {
-      // Preparamos los strings de preguntas y respuestas para el prompt
-      let listadoPreguntas = "";
-      let listadoRespuestas = "";
-
+      // Limpieza de datos: Mapeamos respuestas internas a texto legible para la IA [cite: 17, 18, 19]
+      const respuestasLegibles = {};
       categorias.forEach(cat => {
         cat.preguntas.forEach((p, idx) => {
           const idBase = `${cat.nombre}-${idx}`;
-          const r = respuestas[`${idBase}-val`] || "No respondido";
-          const o = respuestas[`${idBase}-obs`] || "";
-          listadoPreguntas += `- ${cat.nombre}: ${p.texto}\n`;
-          listadoRespuestas += `- Pregunta: ${p.texto} | Respuesta: ${r} | Obs: ${o}\n`;
+          const valor = respuestas[`${idBase}-val`];
+          const obs = respuestas[`${idBase}-obs`];
+          if (valor) {
+            respuestasLegibles[`${cat.nombre} - ${p.texto}`] = {
+              respuesta: valor,
+              observaciones: obs || "Sin observaciones adicionales"
+            };
+          }
         });
       });
 
-      const promptReporte = `PREGUNTAS REALIZADAS: 
-${listadoPreguntas}
+      // Prompt para Reporte de Mecánico Senior no alarmista [cite: 21, 22]
+      const promptReporte = `Eres un Mecánico Senior entregando un Informe Técnico Preliminar profesional.
 
-RESPUESTAS DEL OPERARIO:
-${listadoRespuestas}
+Hallazgos de campo recogidos: ${JSON.stringify(respuestasLegibles)}
 
-Analiza hallazgo por hallazgo.
-Usa lenguaje de ingeniería moderado: "desviación detectada", "condición a monitorear". JAMÁS: catastrófico, urgente, grave, peligro.
+REGLA CRÍTICA: 
+1. En el objeto 'analisis_6m', redacta párrafos profesionales. JAMÁS menciones códigos internos.
+2. Habla directamente de hallazgos técnicos (ej: "Se observa una desviación...").
+3. Usa lenguaje moderado. JAMÁS: catastrófico, urgente, grave, peligro.
+4. El plan_accion debe guiar a una fase de toma de datos más profunda[cite: 23].
 
 RESPONDE SÓLO con este JSON:
 {
@@ -125,9 +132,7 @@ RESPONDE SÓLO con este JSON:
   "hipotesis_raiz": "...",
   "plan_accion": ["Paso 1...", "Paso 2..."],
   "nivel_criticidad": "Bajo|Medio|Alto"
-}
-
-nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
+}`;
 
       const res = await fetch(`${API_BASE_URL}/api/diagnostico`, {
         method: 'POST',
@@ -159,7 +164,7 @@ nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-white text-center">
       <div className="max-w-md w-full space-y-8">
         <Zap size={60} className="text-indigo-400 mx-auto" />
-        <h1 className="text-5xl font-black italic uppercase">6M Expert System</h1>
+        <h1 className="text-5xl font-black italic uppercase text-white">Análisis Causa Raíz</h1>
         <button onClick={handleLogin} className="w-full bg-indigo-600 p-5 rounded-2xl font-black hover:bg-indigo-500 transition-all">ACCEDER AL TERMINAL</button>
       </div>
     </div>
@@ -181,7 +186,7 @@ nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
       <aside className="w-72 bg-slate-950 border-r border-slate-800 flex flex-col p-8 space-y-10 hidden md:flex">
         <div className="flex items-center gap-3 px-2">
           <LayoutDashboard size={20} className="text-indigo-500"/>
-          <span className="font-black text-xl italic uppercase text-white">INNOVATTECH 6M</span>
+          <span className="font-black text-xl italic uppercase text-white">DIMECA 6M</span>
         </div>
         <nav className="flex-grow space-y-3">
           {[
@@ -200,7 +205,7 @@ nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
 
       <main className="flex-grow p-10 overflow-y-auto">
         {view === 'dashboard' && (
-          <div className="space-y-12">
+          <div className="space-y-12 animate-in fade-in">
             <h2 className="text-5xl font-black italic uppercase text-white">Status Report</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <StatCard label="Evaluaciones Totales" value={casos.length} icon={ClipboardList} color="indigo" />
@@ -211,12 +216,12 @@ nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
         )}
 
         {view === 'audit_start' && (
-          <div className="max-w-2xl mx-auto py-20 space-y-10">
+          <div className="max-w-2xl mx-auto py-20 space-y-10 animate-in zoom-in">
             <h2 className="text-5xl font-black text-center italic uppercase text-white">Diagnóstico Preliminar</h2>
             <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 space-y-8">
-              <input placeholder="Equipo o Área (Ej: Motor Principal)" className="w-full p-6 bg-slate-950 rounded-3xl border border-slate-800 text-white" onChange={e => setContexto(e.target.value)} />
-              <textarea placeholder="Síntomas (Ej: Ruido metálico en la zona B)" className="w-full p-6 bg-slate-950 rounded-3xl border border-slate-800 text-white h-40" onChange={e => setSintomas(e.target.value)} />
-              <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-indigo-600 p-6 rounded-3xl font-black text-xl text-white">
+              <input placeholder="Equipo o Área (Ej: Motor Principal)" className="w-full p-6 bg-slate-950 rounded-3xl border border-slate-800 text-white outline-none focus:border-indigo-500 transition-all" onChange={e => setContexto(e.target.value)} />
+              <textarea placeholder="Síntomas (Ej: Ruido metálico en la zona B)" className="w-full p-6 bg-slate-950 rounded-3xl border border-slate-800 text-white h-40 outline-none focus:border-indigo-500 transition-all" onChange={e => setSintomas(e.target.value)} />
+              <button onClick={iniciarAuditoria} disabled={loading} className="w-full bg-indigo-600 p-6 rounded-3xl font-black text-xl text-white hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-900/20">
                 {loading ? <Loader2 className="animate-spin mx-auto" /> : "GENERAR PREGUNTAS"}
               </button>
             </div>
@@ -224,7 +229,7 @@ nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
         )}
 
         {view === 'audit' && (
-          <div className="max-w-4xl mx-auto space-y-16 pb-20">
+          <div className="max-w-4xl mx-auto space-y-16 pb-20 animate-in fade-in">
             <h2 className="text-4xl font-black text-center italic uppercase text-white">Auditoría 6M de Campo</h2>
             {categorias?.map((cat, idx) => (
               <div key={idx} className="space-y-10">
@@ -233,87 +238,93 @@ nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
                   {cat?.preguntas?.map((p, pidx) => {
                     const idBase = `${cat.nombre}-${pidx}`;
                     return (
-                      <div key={pidx} className="bg-slate-900 rounded-[3rem] border border-slate-800 p-12 space-y-10">
+                      <div key={pidx} className="bg-slate-900 rounded-[3rem] border border-slate-800 p-12 space-y-10 shadow-2xl relative">
                         <p className="text-2xl font-black text-white">{p.texto}</p>
                         <div className="grid grid-cols-2 gap-5">
                           {['SÍ', 'NO'].map(opt => (
-                            <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 text-slate-500 border-slate-800'}`}>{opt}</button>
+                            <button key={opt} onClick={() => setRespuestas({...respuestas, [`${idBase}-val`]: opt})} className={`p-5 rounded-2xl font-black border-2 transition-all ${respuestas[`${idBase}-val`] === opt ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-600'}`}>{opt}</button>
                           ))}
                         </div>
-                        <textarea className="w-full p-6 bg-slate-950 rounded-[2rem] border border-slate-800 text-slate-300 h-32" placeholder="Observaciones físicas detectadas..." onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})} />
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase text-slate-500 ml-4">Observaciones técnicas:</label>
+                           <textarea className="w-full p-6 bg-slate-950 rounded-[2rem] border border-slate-800 text-slate-300 h-32 outline-none focus:border-indigo-500 transition-all" placeholder="Escribe detalles específicos observados..." onChange={(e) => setRespuestas({...respuestas, [`${idBase}-obs`]: e.target.value})} />
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
             ))}
-            <button onClick={finalizarAuditoria} disabled={loading} className="w-full bg-emerald-600 p-8 rounded-[3rem] font-black text-2xl text-white">
+            <button onClick={finalizarAuditoria} disabled={loading} className="w-full bg-emerald-600 p-8 rounded-[3rem] font-black text-2xl text-white hover:bg-emerald-500 transition-all shadow-xl">
               {loading ? <Loader2 className="animate-spin mx-auto" /> : "FINALIZAR E INFORMAR"}
             </button>
           </div>
         )}
 
         {view === 'report' && reporteFinal && (
-          <div className="max-w-5xl mx-auto mb-20 shadow-2xl rounded-[3rem] overflow-hidden border border-slate-800">
+          <div className="max-w-5xl mx-auto mb-20 shadow-2xl rounded-[3rem] overflow-hidden border border-slate-800 animate-in zoom-in">
             <div className="bg-slate-900 p-12 flex justify-between border-b border-slate-800">
               <div>
                 <h2 className="text-4xl font-black uppercase italic text-white">{reporteFinal.titulo}</h2>
-                <p className="text-indigo-400 font-black text-[10px] uppercase">Informe Técnico de Ingeniería</p>
+                <p className="text-indigo-400 font-black text-[10px] uppercase tracking-widest mt-1">Análisis Preliminar de Ingeniería</p>
               </div>
-              <div className={`px-6 py-2 rounded-full font-black text-[10px] uppercase h-fit ${reporteFinal.nivel_criticidad === 'Alto' ? 'bg-rose-600 text-white' : 'bg-indigo-600 text-white'}`}>
-                Criticidad: {reporteFinal.nivel_criticidad}
+              <div className={`px-6 py-2 rounded-full font-black text-[10px] uppercase h-fit ${reporteFinal.nivel_criticidad === 'Alto' ? 'bg-rose-600 text-white shadow-lg' : 'bg-indigo-600 text-white shadow-lg'}`}>
+                Prioridad: {reporteFinal.nivel_criticidad}
               </div>
             </div>
             <div className="bg-slate-950 p-16 space-y-12">
               <section className="space-y-4">
-                <h3 className="text-indigo-500 font-black text-xs uppercase tracking-widest">I. Resumen Ejecutivo</h3>
-                <p className="text-slate-400 text-sm italic border-l-2 border-indigo-500/30 pl-8">{reporteFinal.resumen_ejecutivo}</p>
+                <h3 className="text-indigo-500 font-black text-xs uppercase tracking-widest">I. Resumen de Hallazgos</h3>
+                <p className="text-slate-400 text-sm italic border-l-2 border-indigo-500/30 pl-8 leading-relaxed">{reporteFinal.resumen_ejecutivo}</p>
               </section>
               <section className="space-y-6">
-                <h3 className="text-indigo-500 font-black text-xs uppercase tracking-widest">II. Desglose 6M</h3>
+                <h3 className="text-indigo-500 font-black text-xs uppercase tracking-widest">II. Desglose por Factores (6M)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {Object.entries(reporteFinal.analisis_6m || {}).map(([m, d]) => (
-                    <div key={m} className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800">
+                    <div key={m} className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 hover:border-indigo-500/30 transition-all">
                       <h4 className="text-indigo-400 font-black text-[10px] uppercase mb-3">{m}</h4>
                       <p className="text-[11px] text-slate-400 font-medium leading-relaxed">{d}</p>
                     </div>
                   ))}
                 </div>
               </section>
-              <section className="bg-slate-900 p-12 rounded-[3.5rem] border border-indigo-500/30">
-                <h3 className="text-indigo-400 font-black text-xs uppercase mb-4 opacity-80">III. Hipótesis Raíz</h3>
-                <p className="text-3xl font-black text-white italic">"{reporteFinal.hipotesis_raiz}"</p>
+              <section className="bg-slate-900 p-12 rounded-[3.5rem] border border-indigo-500/30 shadow-2xl">
+                <h3 className="text-indigo-400 font-black text-xs uppercase mb-4 opacity-80">III. Hipótesis Técnica Sugerida</h3>
+                <p className="text-3xl font-black text-white italic leading-tight">"{reporteFinal.hipotesis_raiz}"</p>
               </section>
               <section className="space-y-6">
-                <h3 className="text-emerald-500 font-black text-xs uppercase tracking-widest">IV. Plan de Acción Recomendado</h3>
+                <h3 className="text-emerald-500 font-black text-xs uppercase tracking-widest">IV. Hoja de Ruta / Recomendaciones</h3>
                 <div className="grid gap-4">
                   {reporteFinal.plan_accion?.map((accion, i) => (
-                    <div key={i} className="flex items-center gap-5 bg-slate-900 p-6 rounded-3xl border border-slate-800">
+                    <div key={i} className="flex items-center gap-5 bg-slate-900 p-6 rounded-3xl border border-slate-800 hover:border-emerald-500/30 transition-all">
                       <CheckCircle2 className="text-emerald-500 shrink-0" size={24}/>
-                      <p className="text-sm text-slate-300 font-bold">{accion}</p>
+                      <p className="text-sm text-slate-300 font-bold italic">{accion}</p>
                     </div>
                   ))}
                 </div>
               </section>
+              <footer className="pt-10 border-t border-slate-800">
+                <p className="text-[10px] text-slate-600 font-bold italic leading-relaxed">Nota: Este informe constituye una evaluación técnica preliminar. Para una determinación definitiva, se sugiere un levantamiento de ingeniería avanzado.</p>
+              </footer>
             </div>
             <div className="bg-slate-900 p-10 flex justify-between border-t border-slate-800">
-              <button onClick={() => setView('dashboard')} className="text-slate-500 font-black text-[10px] uppercase flex items-center gap-2 hover:text-white transition-all"><ArrowLeft size={16}/> Volver al Dashboard</button>
-              <button onClick={() => window.print()} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xs hover:bg-indigo-400 hover:text-white transition-all">IMPRIMIR</button>
+              <button onClick={() => setView('dashboard')} className="text-slate-500 font-black text-[10px] uppercase flex items-center gap-2 hover:text-white transition-all"><ArrowLeft size={16}/> Dashboard</button>
+              <button onClick={() => window.print()} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-400 hover:text-white transition-all shadow-xl">Imprimir Reporte</button>
             </div>
           </div>
         )}
 
         {view === 'history' && (
-          <div className="space-y-12">
-            <h2 className="text-5xl font-black italic uppercase text-white">Archivo de Casos</h2>
+          <div className="space-y-12 animate-in fade-in">
+            <h2 className="text-5xl font-black italic uppercase text-white tracking-tighter">Archivo Maestro de Casos</h2>
             <div className="grid gap-8">
               {casos.map(c => (
-                <div key={c.id} className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 flex justify-between items-center">
+                <div key={c.id} className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 flex justify-between items-center shadow-xl hover:border-indigo-500/30 transition-all group">
                   <div>
-                    <h4 className="text-3xl font-black text-white italic">{c.contexto}</h4>
-                    <p className="text-indigo-400 font-bold text-[10px] uppercase tracking-widest">{new Date(c.fecha).toLocaleDateString()}</p>
+                    <h4 className="text-3xl font-black text-white italic group-hover:text-indigo-400 transition-colors">{c.contexto}</h4>
+                    <p className="text-indigo-400 font-bold text-[10px] uppercase tracking-widest mt-1">{new Date(c.fecha).toLocaleDateString()}</p>
                   </div>
-                  <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase ${c.status === 'solucionado' ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>{c.status}</span>
+                  <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase ${c.status === 'solucionado' ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border border-rose-500/20'}`}>{c.status}</span>
                 </div>
               ))}
             </div>
@@ -325,13 +336,13 @@ nivel_criticidad = Alto si >3 M presentan hallazgos fuera de rango.`;
 }
 
 const StatCard = ({ label, value, icon: Icon, color }) => (
-  <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 flex items-center gap-8 relative overflow-hidden group hover:border-indigo-500/50 transition-all">
+  <div className="bg-slate-900 p-12 rounded-[3.5rem] border border-slate-800 flex items-center gap-8 relative overflow-hidden group hover:border-indigo-500/50 transition-all shadow-2xl">
     <div className={`p-6 rounded-3xl ${color === 'indigo' ? 'bg-indigo-500/10 text-indigo-400' : color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
       <Icon size={32} />
     </div>
     <div>
-      <p className="text-slate-500 font-black text-[10px] uppercase mb-1 tracking-widest">{label}</p>
-      <p className="text-5xl font-black text-white">{value}</p>
+      <p className="text-slate-500 font-black text-[10px] uppercase mb-1 tracking-[0.2em]">{label}</p>
+      <p className="text-5xl font-black text-white tracking-tighter">{value}</p>
     </div>
   </div>
 );
